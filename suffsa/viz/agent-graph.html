@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent Run Graph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/* Layout: a mission-control screen. The run graph fills the top; three HUD panels (log, dispatch, cost) sit under it and stack on phones. Single deliberate dark theme. */
+:root{--bg:#07080b;--panel:#0e1016;--line:#262a35;--ink:#e8eaf0;--dim:#8a90a0;--blue:#4b7bff;--green:#2fbf71;--yellow:#e4c22e;--orange:#ff9a1f;--red:#ff4d4d;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:12px}
+.app{max-width:1100px;margin:0 auto;padding-inline:16px;padding-block:14px 24px;display:flex;flex-direction:column;gap:10px}
+.top{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:11px;color:var(--dim);letter-spacing:.04em}
+.top b{color:var(--ink);font-weight:700}
+.top .run{color:var(--ink)}
+.ctl{margin-left:auto;display:flex;gap:6px}
+.ctl button{background:var(--panel);border:1px solid var(--line);color:var(--ink);font:inherit;padding:5px 10px;border-radius:6px;cursor:pointer}
+.ctl button:hover{border-color:var(--dim)}
+.ctl button[aria-pressed=true]{border-color:var(--orange);color:var(--orange)}
+.stage{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:radial-gradient(60% 55% at 50% 52%,#11131b 0%,var(--bg) 70%)}
+canvas#g{display:block;width:100%;aspect-ratio:1/1;max-height:78vh}
+.hud{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:10px}
+@media (max-width:760px){.hud{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ph{font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;display:flex;justify-content:space-between}
+.log{height:118px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;font-size:11px}
+.log div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log .t{color:var(--dim)}
+.disp{display:flex;flex-direction:column;gap:5px;font-size:11px}
+.drow{display:grid;grid-template-columns:22px 1fr 40px 54px;gap:8px;align-items:center;font-variant-numeric:tabular-nums}
+.dbar{height:8px;background:#1a1d26;border-radius:2px;overflow:hidden;display:flex;gap:1px}
+.dbar i{flex:1;background:#1f2330}
+.dbar i.on{background:var(--ink)}
+.dbar.fail i.on{background:var(--red)}
+.ok{color:var(--green)}.retry{color:var(--red)}.run{color:var(--orange)}.wait{color:var(--dim)}
+.cost{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:11px;font-variant-numeric:tabular-nums}
+.cost span{color:var(--dim)}
+canvas#spark{width:100%;height:44px;display:block}
+.note{color:var(--dim);font-size:11px;line-height:1.6;font-family:system-ui,sans-serif;max-width:80ch}
+@media (prefers-reduced-motion:reduce){.note::after{content:" Motion is slowed because your system prefers reduced motion."}}
+
+body.embed .note,body.embed .cost-panel{display:none}
+body.embed .hud{grid-template-columns:1fr 1fr}
+@media (max-width:560px){body.embed .hud{grid-template-columns:1fr}}
+body.embed .app{padding:0;gap:8px}
+body.embed canvas#g{max-height:none}
+</style>
+</head><body>
+
+<div class="app">
+  <div class="top">
+    <span class="run">run <b id="runId">crew-run-07</b></span>
+    <span>NODES <b id="hNodes">18</b></span><span>EDGES <b id="hEdges">0</b></span><span>DOC READERS <b id="hReaders">0</b></span><span>DEPTH <b id="hDepth">1</b></span><span>T <b id="hT">0.00</b></span><span>FRAME <b id="hFrame">0</b></span>
+    <div class="ctl"><button id="play" aria-pressed="false">Pause</button><button id="speed">1×</button><button id="restart">Restart</button></div>
+  </div>
+  <div class="stage"><canvas id="g" aria-label="Animated graph of an AI agent run: a central model coordinating planner, research, worker agents, checks and a writer"></canvas></div>
+  <div class="hud">
+    <div class="panel"><div class="ph"><span>// run log</span><span id="phase">idle</span></div><div class="log" id="log"></div></div>
+    <div class="panel"><div class="ph"><span>// dispatch</span><span id="dispSum">0/6</span></div><div class="disp" id="disp"></div></div>
+    <div class="panel cost-panel"><div class="ph"><span>// graph cost</span><span id="costT">$0.000</span></div>
+      <div class="cost"><span>edges</span><b id="cEdges">0</b><span>doc readers</span><b id="cReaders">0</b><span>tokens</span><b id="cTok">0</b><span>retries</span><b id="cRetry">0</b></div>
+      <canvas id="spark"></canvas></div>
+  </div>
+  <p class="note">A simulated multi-agent run. The central model plans the job, splits it into subtasks, dispatches six worker agents fed by document readers, recovers from a failed worker, then checks citations, merges, verifies and writes the answer. Bright lines show where data is flowing right now.</p>
+</div>
+
+<script>
+(()=>{
+const C={bg:"#07080b",panel:"#0e1016",line:"#262a35",ink:"#e8eaf0",dim:"#8a90a0",blue:"#4b7bff",green:"#2fbf71",yellow:"#e4c22e",orange:"#ff9a1f",red:"#ff4d4d"};
+const cv=document.getElementById("g"),ctx=cv.getContext("2d");
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let rnd=(s=>()=>(s=(s*16807)%2147483647)/2147483647)(42);
+const R=(a,b)=>a+(b-a)*rnd();
+const W=1000,H=1000,CX=500,CY=520;
+
+/* ---- nodes ---- */
+const N=[
+ ["sources","green",120,170,["fetch","rank","dedupe","fresh"]],["brief","green",300,95,["goal","scope","tone","len"]],["planner","blue",470,60,["budget","steps","depth","conf"]],["decompose","blue",640,85,["tasks","deps","width","par"]],
+ ["router","yellow",820,150,["queue","load","route","wait"]],["synthesis","yellow",80,330,["claims","links","gaps","conf"]],["budget","yellow",70,470,["tokens","usd","cap","burn"]],["prior runs","green",90,610,["hits","reuse","age","sim"]],
+ ["cite check","yellow",120,760,["cited","miss","dupes","ok"]],["agent 01","orange",880,300,["budget","weight","tokens","state"]],["agent 02","orange",900,410,["budget","weight","tokens","state"]],["agent 03","orange",905,520,["budget","weight","tokens","state"]],
+ ["agent 04","orange",895,630,["budget","weight","tokens","state"]],["agent 05","orange",860,740,["budget","weight","tokens","state"]],["agent 06","orange",740,830,["budget","weight","tokens","state"]],["merge","blue",340,880,["parts","conflict","order","size"]],
+ ["verify","yellow",500,905,["checks","fail","fix","pass"]],["writer","blue",640,880,["words","draft","edits","done"]]
+].map(([name,col,x,y,keys],i)=>({i,name,col,x,y,keys,vals:keys.map(()=>R(.1,.9)),act:0,state:"idle",prog:0}));
+const byName=n=>N.find(o=>o.name===n);
+const AG=N.filter(n=>n.name.startsWith("agent"));
+
+/* ---- brain shape (procedural) ---- */
+function brainPath(c,s=1){
+  c.beginPath();
+  c.moveTo(CX-190*s,CY+20*s);
+  c.bezierCurveTo(CX-230*s,CY-80*s,CX-150*s,CY-180*s,CX-40*s,CY-170*s);
+  c.bezierCurveTo(CX+40*s,CY-215*s,CX+190*s,CY-170*s,CX+215*s,CY-60*s);
+  c.bezierCurveTo(CX+250*s,CY+30*s,CX+200*s,CY+110*s,CX+120*s,CY+105*s);
+  c.bezierCurveTo(CX+80*s,CY+150*s,CX+10*s,CY+130*s,CX-30*s,CY+100*s);
+  c.bezierCurveTo(CX-120*s,CY+125*s,CX-200*s,CY+90*s,CX-190*s,CY+20*s);
+  c.closePath();
+}
+const brain=document.createElement("canvas");brain.width=W;brain.height=H;
+(function drawBrain(){
+  const b=brain.getContext("2d");
+  // cerebellum + stem
+  b.fillStyle="#0b0c10";b.strokeStyle="#d9dce4";b.lineWidth=2.4;
+  b.beginPath();b.ellipse(CX+95,CY+120,70,40,-.15,0,7);b.fill();b.stroke();
+  b.save();b.beginPath();b.ellipse(CX+95,CY+120,68,38,-.15,0,7);b.clip();
+  b.lineWidth=1.4;for(let k=0;k<9;k++){b.beginPath();b.ellipse(CX+95,CY+150-k*7,80,22,-.15,Math.PI*1.05,Math.PI*1.95);b.stroke()}b.restore();
+  b.lineWidth=2.4;b.beginPath();b.moveTo(CX+30,CY+115);b.bezierCurveTo(CX+40,CY+170,CX+30,CY+210,CX+20,CY+245);b.lineTo(CX+60,CY+245);b.bezierCurveTo(CX+65,CY+200,CX+70,CY+160,CX+80,CY+135);b.fillStyle="#0b0c10";b.fill();b.stroke();
+  // cortex
+  brainPath(b);b.fillStyle="#0b0c10";b.fill();
+  b.save();brainPath(b);b.clip();
+  b.strokeStyle="#cfd3dc";b.lineCap="round";b.lineJoin="round";
+  const folds=[];
+  for(let k=0;k<120;k++){
+    let x=R(CX-215,CX+225),y=R(CY-195,CY+125),a=R(0,6.28);const pts=[[x,y]];
+    const n=Math.floor(R(5,11));for(let j=0;j<n;j++){a+=R(-.9,.9);x+=Math.cos(a)*R(10,18);y+=Math.sin(a)*R(10,18);pts.push([x,y])}folds.push(pts);
+  }
+  const smooth=pts=>{b.beginPath();b.moveTo(pts[0][0],pts[0][1]);for(let j=1;j<pts.length-1;j++){const mx=(pts[j][0]+pts[j+1][0])/2,my=(pts[j][1]+pts[j+1][1])/2;b.quadraticCurveTo(pts[j][0],pts[j][1],mx,my)}b.stroke()};
+  b.strokeStyle="#c9ced8";b.lineWidth=7;folds.forEach(smooth);
+  b.strokeStyle="#0b0c10";b.lineWidth=3.2;folds.forEach(smooth);
+  // central fissure
+  b.strokeStyle="#0b0c10";b.lineWidth=6;b.beginPath();b.moveTo(CX-30,CY-172);b.bezierCurveTo(CX-10,CY-90,CX+30,CY-40,CX+10,CY+20);b.stroke();
+  b.restore();
+  b.lineWidth=3;b.strokeStyle="#e8eaf0";brainPath(b);b.stroke();
+})();
+function brainPoint(){ // random point on/near the brain edge
+  const t=R(0,6.28);return {x:CX+Math.cos(t)*R(150,205),y:CY-30+Math.sin(t)*R(95,150)};
+}
+
+/* ---- edges ---- */
+const E=[];
+N.forEach(n=>{const k=n.name.startsWith("agent")?16:9;for(let j=0;j<k;j++){const p=brainPoint();E.push({a:n,b:null,p,c1:{x:(n.x+p.x)/2+R(-120,120),y:(n.y+p.y)/2+R(-120,120)},w:R(.3,1)})}});
+const link=(x,y,k=3)=>{const A=byName(x),B=byName(y);for(let j=0;j<k;j++)E.push({a:A,b:B,c1:{x:(A.x+B.x)/2+R(-160,160),y:(A.y+B.y)/2+R(-160,160)},w:R(.4,1)})};
+[["brief","planner"],["planner","decompose"],["decompose","router"],["sources","synthesis"],["prior runs","synthesis"],["budget","planner"],["synthesis","cite check"],["cite check","merge"],["merge","verify"],["verify","writer"]].forEach(([a,b])=>link(a,b));
+AG.forEach(a=>{link("router",a.name,2);link(a.name,"merge",2);link("sources",a.name,1)});
+while(E.length<217){const A=N[Math.floor(R(0,N.length))],B=N[Math.floor(R(0,N.length))];if(A!==B)E.push({a:A,b:B,c1:{x:R(150,850),y:R(150,850)},w:R(.2,.6)})}
+E.length=217;
+const end=e=>e.b?{x:e.b.x,y:e.b.y}:e.p;
+
+/* ---- simulation ---- */
+let T=0,frame=0,speed=1,playing=true,flows=[],logLines=[],readers=0,tokens=0,usd=0,retries=0,spark=[],edgesLive=0,depth=1,phase="idle",done=false;
+const sched=[];const at=(t,f)=>sched.push({t,f,fired:false});
+const log=(who,msg,cls="")=>{logLines.push({t:T,who,msg,cls});if(logLines.length>40)logLines.shift()};
+const on=(n,s="run")=>{const o=byName(n);o.state=s;o.act=1};
+const off=(n,s="done")=>{const o=byName(n);o.state=s};
+function flow(a,b,n=6){const A=byName(a),B=b?byName(b):null;E.filter(e=>e.a===A&&(B?e.b===B:!e.b)).slice(0,n).forEach(e=>flows.push({e,t:0,v:R(.5,.9)}))}
+function setup(){
+  T=0;frame=0;flows=[];logLines=[];readers=0;tokens=0;usd=0;retries=0;spark=[];depth=1;phase="plan";done=false;sched.length=0;
+  N.forEach(n=>{n.state="idle";n.act=0;n.prog=0});
+  at(0,()=>{on("brief");flow("brief","planner");log("brief","goal: compare 3 vendors, cite sources")});
+  at(1.2,()=>{off("brief");on("planner");flow("planner");flow("budget","planner");on("budget");log("planner","plan v1: research → compare → write")});
+  at(2.6,()=>{off("planner");on("decompose");flow("planner","decompose");log("decompose","6 subtasks, depth 2");depth=2;phase="decompose"});
+  at(3.8,()=>{off("decompose");on("router");flow("decompose","router");log("router","dispatching 6 agents");phase="dispatch"});
+  AG.forEach((a,k)=>at(4.2+k*.35,()=>{on(a.name);a.rate=R(.065,.11);flow("router",a.name,2);log(a.name,"started subtask "+(k+1),"run")}));
+  at(4.6,()=>{on("sources");on("prior runs");log("sources","reading documents");phase="research"});
+  at(9.2,()=>{const a=byName("agent 05");a.state="fail";retries++;log("agent 05","tool error: page timed out","retry")});
+  at(11.1,()=>{const a=byName("agent 05");a.state="run";a.prog=Math.max(.15,a.prog*.4);a.rate=.09;log("router","retry agent 05 with backup source","retry")});
+  at(15.5,()=>{on("synthesis");on("cite check");flow("synthesis","cite check");log("synthesis","merging 41 claims");phase="check"});
+  at(17.4,()=>{log("cite check","2 claims missing sources → flagged","retry")});
+  at(18.6,()=>{off("synthesis");off("cite check");off("sources");off("prior runs");on("merge");flow("cite check","merge");log("merge","combined 6 parts");phase="merge"});
+  at(20.2,()=>{off("merge");on("verify");flow("merge","verify");log("verify","1 conflict: pricing date","retry");phase="verify"});
+  at(21.6,()=>{log("verify","resolved with newer source")});
+  at(22.4,()=>{off("verify");on("writer");flow("verify","writer");log("writer","drafting answer");phase="write"});
+  at(25.8,()=>{off("writer");off("router");off("budget");log("writer","done: 1,240 words, 14 citations","ok");phase="done";done=true});
+  at(30,()=>setup());
+}
+
+/* ---- render ---- */
+let scale=1,dpr=1;
+function resize(){dpr=Math.min(2,devicePixelRatio||1);const r=cv.getBoundingClientRect();cv.width=r.width*dpr;cv.height=r.height*dpr;scale=Math.min(cv.width/W,cv.height/H)}
+addEventListener("resize",resize);
+const colOf=n=>n.state==="fail"?C.red:C[n.col];
+function qpt(a,c,b,t){const u=1-t;return {x:u*u*a.x+2*u*t*c.x+t*t*b.x,y:u*u*a.y+2*u*t*c.y+t*t*b.y}}
+function draw(){
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
+  const ox=(cv.width-W*scale)/2,oy=(cv.height-H*scale)/2;ctx.setTransform(scale,0,0,scale,ox,oy);
+  // edges
+  edgesLive=0;
+  for(const e of E){
+    const live=e.a.state==="run"||e.a.state==="fail"||(e.b&&e.b.state==="run");if(live)edgesLive++;
+    ctx.strokeStyle=e.a.state==="fail"?"rgba(255,77,77,.55)":live?`rgba(232,234,240,${.18+.25*e.w})`:`rgba(232,234,240,${.035+.05*e.w})`;
+    ctx.lineWidth=live?1.1:.7;const b=end(e);ctx.beginPath();ctx.moveTo(e.a.x,e.a.y);ctx.quadraticCurveTo(e.c1.x,e.c1.y,b.x,b.y);ctx.stroke();
+  }
+  // packets
+  for(const f of flows){const b=end(f.e),p=qpt(f.e.a,f.e.c1,b,f.t);ctx.fillStyle=f.e.a.state==="fail"?C.red:"#fff";ctx.beginPath();ctx.arc(p.x,p.y,2.6,0,7);ctx.fill()}
+  // brain
+  ctx.drawImage(brain,0,0);
+  const pulse=.5+.5*Math.sin(T*3);ctx.save();brainPath(ctx,1.02);ctx.strokeStyle=`rgba(75,123,255,${done?.15:.15+.25*pulse})`;ctx.lineWidth=6;ctx.stroke();ctx.restore();
+  // nodes
+  ctx.font="600 11px JetBrains Mono, monospace";ctx.textBaseline="middle";
+  for(const n of N){
+    const w=116,h=70,x=n.x-w/2,y=n.y-h/2,col=colOf(n),idle=n.state==="idle";
+    ctx.globalAlpha=idle?.55:1;
+    ctx.fillStyle="#0d0f15";ctx.strokeStyle=n.state==="fail"?C.red:n.state==="run"?col:"#2c3140";ctx.lineWidth=n.state==="run"||n.state==="fail"?1.6:1;
+    ctx.beginPath();ctx.rect(x,y,w,h);ctx.fill();ctx.stroke();
+    ctx.fillStyle=col;ctx.fillRect(x,y,w,14);
+    ctx.fillStyle="#07080b";ctx.fillText(n.name,x+6,y+7.5);
+    if(n.state==="run"){ctx.fillStyle="#07080b";ctx.beginPath();ctx.arc(x+w-8,y+7,3,0,7);ctx.globalAlpha=.4+.6*pulse;ctx.fill();ctx.globalAlpha=1}
+    ctx.font="400 9px JetBrains Mono, monospace";
+    n.keys.forEach((k,j)=>{const yy=y+23+j*12;ctx.fillStyle=C.dim;ctx.fillText(k,x+6,yy);
+      let v=n.vals[j];let txt=v.toFixed(3);
+      if(n.name.startsWith("agent")&&k==="state"){txt=n.state==="done"?"done":n.state==="fail"?"error":n.state==="run"?Math.round(n.prog*100)+"%":"wait"}
+      ctx.fillStyle=n.state==="fail"&&k==="state"?C.red:C.ink;ctx.textAlign="right";ctx.fillText(txt,x+w-6,yy);ctx.textAlign="left";
+      ctx.fillStyle="#1d212c";ctx.fillRect(x+44,yy-2,30,4);ctx.fillStyle=col;ctx.fillRect(x+44,yy-2,30*Math.min(1,v),4)});
+    ctx.font="600 11px JetBrains Mono, monospace";ctx.globalAlpha=1;
+  }
+}
+/* ---- HUD ---- */
+const $=id=>document.getElementById(id);
+const sp=$("spark"),sx=sp.getContext("2d");
+function hud(){
+  $("hEdges").textContent=edgesLive;$("hReaders").textContent=readers;$("hDepth").textContent=depth;$("hT").textContent=T.toFixed(2);$("hFrame").textContent=frame;$("phase").textContent=phase;
+  $("log").innerHTML=logLines.slice(-7).map(l=>`<div><span class="t">${l.t.toFixed(1).padStart(5," ")}</span> <span class="${l.cls}">${l.who}</span> ${l.msg}</div>`).join("");
+  let fin=0;$("disp").innerHTML=AG.map((a,k)=>{const p=a.state==="done"?1:a.prog,cells=20,onN=Math.round(p*cells);if(a.state==="done")fin++;
+    const st=a.state==="done"?["ok","ok"]:a.state==="fail"?["retry","error"]:a.state==="run"?["run","running"]:["wait","queued"];
+    return `<div class="drow"><span>a${k+1}</span><div class="dbar${a.state==="fail"?" fail":""}">${Array.from({length:cells},(_,i)=>`<i class="${i<onN?"on":""}"></i>`).join("")}</div><span>${Math.round(p*100)}%</span><span class="${st[0]}">${st[1]}</span></div>`}).join("");
+  $("dispSum").textContent=fin+"/6";
+  $("cEdges").textContent=edgesLive;$("cReaders").textContent=readers;$("cTok").textContent=Math.round(tokens).toLocaleString();$("cRetry").textContent=retries;$("costT").textContent="$"+usd.toFixed(3);
+  const r=sp.getBoundingClientRect();if(sp.width!==Math.round(r.width*dpr)){sp.width=r.width*dpr;sp.height=r.height*dpr}
+  sx.clearRect(0,0,sp.width,sp.height);if(spark.length>1){const mx=Math.max(...spark,1);sx.strokeStyle=C.blue;sx.lineWidth=1.5*dpr;sx.beginPath();
+    spark.forEach((v,i)=>{const X=i/(119)*sp.width,Y=sp.height-(v/mx)*(sp.height-4*dpr)-2*dpr;i?sx.lineTo(X,Y):sx.moveTo(X,Y)});sx.stroke()}
+}
+/* ---- loop ---- */
+let last=performance.now(),hudT=0;
+function tick(now){
+  const dt=Math.min(.05,(now-last)/1000)*(reduce?.4:1)*speed;last=now;
+  if(playing){
+    T+=dt;frame++;
+    for(const s of sched)if(!s.fired&&T>=s.t){s.fired=true;s.f()}
+    let burn=0;
+    AG.forEach(a=>{if(a.state==="run"){a.prog=Math.min(1,a.prog+a.rate*dt);burn+=1;if(rnd()<dt*1.2)flows.push({e:E.find(e=>e.a===a&&!e.b&&rnd()<.3)||E.find(e=>e.a===a),t:0,v:R(.5,.9)});
+      if(a.prog>=1){a.state="done";log(a.name,"subtask complete","ok");flow(a.name,"merge",2)}}});
+    if(byName("sources").state==="run"){if(readers<11&&rnd()<dt*1.4)readers++;if(rnd()<dt*3)flow("sources",AG[Math.floor(rnd()*6)].name,1)}
+    N.forEach(n=>{if(n.state==="run"||n.state==="fail"){burn+=.3;n.vals=n.vals.map(v=>Math.min(1,Math.max(.02,v+R(-.6,.6)*dt)))}});
+    tokens+=burn*900*dt;usd=tokens/1e6*6;
+    if(frame%6===0){spark.push(burn);if(spark.length>120)spark.shift()}
+    flows.forEach(f=>f.t+=dt*f.v);flows=flows.filter(f=>f.t<1);
+  }
+  draw();if(now-hudT>120){hud();hudT=now}
+  requestAnimationFrame(tick);
+}
+$("play").onclick=e=>{playing=!playing;e.target.textContent=playing?"Pause":"Play";e.target.setAttribute("aria-pressed",!playing)};
+$("speed").onclick=e=>{speed=speed===1?2:speed===2?.5:1;e.target.textContent=speed+"×"};
+$("restart").onclick=()=>{rnd=(s=>()=>(s=(s*16807)%2147483647)/2147483647)(Date.now()%100000+1);setup()};
+resize();setup();requestAnimationFrame(tick);
+})();
+</script>
+
+<script>
+if(window.self!==window.top){document.body.classList.add("embed");
+  const post=()=>parent.postMessage({type:"lw-viz-height",h:document.documentElement.scrollHeight},"*");
+  addEventListener("load",post);addEventListener("resize",post);setTimeout(post,300);new ResizeObserver(post).observe(document.body);}
+</script>
+</body></html>

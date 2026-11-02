@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inner Banks Exchange — Community Board</title>
+  <meta property="og:title" content="Inner Banks Exchange Community Board">
+  <meta property="og:description" content="Local resources, jobs, events, youth programs and services across North Carolina's Inner Banks.">
+  <meta property="og:type" content="website">
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive, sans-serif;
+      background-color: #b98b53;
+      background-image: radial-gradient(rgba(0,0,0,.18) 1px, transparent 1.5px), radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.5px);
+      background-size: 7px 7px, 11px 11px;
+      color: #222;
+      min-height: 100vh;
+      padding: 16px 12px 60px;
+    }
+    .frame { max-width: 1000px; margin: 0 auto; border: 14px solid #6b4423; border-radius: 6px; box-shadow: inset 0 0 18px rgba(0,0,0,.45), 0 6px 18px rgba(0,0,0,.4); padding: 20px 16px 30px; background: rgba(185,139,83,.35); }
+    .sign { text-align: center; margin-bottom: 14px; }
+    .sign h1 { display: inline-block; background: #fffbe6; border: 4px double #6b4423; padding: 8px 20px; font-size: 28px; letter-spacing: 1px; color: #7a1f1f; text-shadow: 2px 2px 0 #f3d9a0; transform: rotate(-1deg); box-shadow: 3px 3px 0 rgba(0,0,0,.35); }
+    .sign p { margin-top: 10px; color: #fffbe6; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+    nav { display: flex; justify-content: center; gap: 18px; margin: 10px 0 16px; }
+    nav a { color: #fffbe6; font-weight: bold; text-shadow: 1px 1px 2px #000; text-decoration: none; }
+    nav a.active { text-decoration: underline; }
+    .tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 22px; }
+    .tabs button { font-family: inherit; background: #fffbe6; border: 2px solid #6b4423; border-radius: 4px 4px 0 0; padding: 7px 12px; font-size: 14px; cursor: pointer; color: #333; }
+    .tabs button.on { background: #ffe14d; font-weight: bold; box-shadow: 0 3px 0 #ffe14d, 0 -2px 0 #6b4423; }
+    .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 30px 24px; }
+    .note { position: relative; padding: 22px 16px 14px; box-shadow: 3px 5px 8px rgba(0,0,0,.4); transform: rotate(var(--r, 0deg)); transition: transform .15s; word-wrap: break-word; }
+    .note:hover, .note.flash { transform: rotate(0) scale(1.02); z-index: 2; }
+    .note.flash { outline: 4px solid #e63946; }
+    .note::before { content: ''; position: absolute; top: -8px; left: 50%; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a8a, #c1121f 70%); box-shadow: 2px 3px 3px rgba(0,0,0,.5); }
+    .note.spot { background: #fff !important; border: 3px dashed #c1121f; }
+    .badge { display: inline-block; font-size: 12px; font-weight: bold; background: rgba(0,0,0,.12); border-radius: 3px; padding: 1px 7px; margin-bottom: 6px; }
+    .spot .badge { background: #c1121f; color: #fff; }
+    .note h3 { font-size: 18px; margin-bottom: 6px; }
+    .note p { font-size: 15px; white-space: pre-wrap; margin-bottom: 8px; }
+    .meta { font-size: 13px; color: #444; }
+    .more { display: inline-block; margin-top: 6px; color: #0a3d91; font-weight: bold; font-size: 14px; }
+    .share { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; padding-top: 8px; border-top: 1px dotted rgba(0,0,0,.35); }
+    .share a, .share button { font-family: inherit; font-size: 12px; background: rgba(255,255,255,.7); border: 1px solid #555; border-radius: 3px; padding: 2px 7px; color: #222; text-decoration: none; cursor: pointer; }
+    details.cm { margin-top: 8px; font-size: 14px; }
+    details.cm summary { cursor: pointer; font-weight: bold; }
+    .cm .c { background: rgba(255,255,255,.65); border-radius: 4px; padding: 6px 8px; margin-top: 6px; }
+    .cm .c b { font-size: 13px; }
+    .cm form { display: grid; gap: 5px; margin-top: 8px; }
+    input, select, textarea { width: 100%; padding: 8px 10px; border: 2px solid #6b4423; border-radius: 4px; font: inherit; font-size: 14px; background: #fffef5; color: #222; }
+    textarea { min-height: 70px; resize: vertical; }
+    .go { background: #2a9d8f; color: #fff; border: 2px solid #1d6f66; border-radius: 4px; padding: 9px; font: inherit; font-weight: bold; cursor: pointer; }
+    .formbox { max-width: 520px; margin: 0 auto 24px; background: #fffbe6; border: 3px solid #6b4423; border-radius: 6px; padding: 12px 16px; box-shadow: 3px 5px 8px rgba(0,0,0,.4); }
+    .formbox summary { cursor: pointer; font-weight: bold; font-size: 17px; }
+    .formbox form { display: grid; gap: 8px; margin-top: 10px; }
+    .msg { font-size: 14px; }
+    .empty { text-align: center; color: #fffbe6; font-weight: bold; text-shadow: 1px 1px 2px #000; padding: 30px 0; grid-column: 1/-1; }
+    .fine { text-align: center; color: #fffbe6; font-size: 13px; margin-top: 24px; text-shadow: 1px 1px 2px #000; }
+      :focus-visible { outline: 3px solid #0a3d91; outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .note { transform: none !important; transition: none; } }
+  </style>
+</head>
+<body>
+<div class="frame">
+  <div class="sign">
+    <h1>&#128204; Inner Banks Exchange</h1>
+    <p>Neighborhood Bulletin Board &mdash; North Carolina's Inner Banks</p>
+  </div>
+  <nav><a href="/">Shop</a><a href="/community.html" class="active">Community Board</a></nav>
+
+  <details class="formbox">
+    <summary>&#9998; Pin something to the board</summary>
+    <form id="postForm">
+      <select id="county" required aria-label="County or area"></select>
+      <select id="category" required>
+        <option value="requests">Neighbors Asking (request / suggestion)</option>
+        <option value="jobs">Help Wanted</option>
+        <option value="events">Local Event</option>
+        <option value="kids">Kids &amp; Youth Program</option>
+        <option value="services">Service Offered</option>
+      </select>
+      <input id="title" placeholder="Title" maxlength="100" required>
+      <textarea id="description" placeholder="Details (what, where, when, pay, ages...)" maxlength="1000" required></textarea>
+      <input id="contact" placeholder="How to reach you (phone, email, or address)" maxlength="150" required>
+      <input id="website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
+      <p class="msg">Inner Banks listings only (nearby Suffolk or Hampton Roads posts are accepted only if they serve Inner Banks residents). Please keep it kind and local. Don't post private details about other people, especially children. Posts are reviewed, but listings aren't endorsements by Inner Banks Exchange.</p>
+      <button class="go" type="submit">Send for review</button>
+      <div class="msg" id="formMsg"></div>
+    </form>
+  </details>
+
+  <div style="max-width:320px;margin:0 auto 14px"><select id="countyFilter" aria-label="Show listings for"></select></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="board" id="list"><div class="empty">Loading...</div></div>
+  <p class="fine">New posts and comments are reviewed before they appear. Local resource info was compiled in October 2026 from public sources. Phone numbers, hours and dates can change &mdash; call ahead or check the link.</p>
+</div>
+
+<script>
+  const firebaseConfig = {
+    projectId: "thruket-site1",
+    authDomain: "thruket-site1.firebaseapp.com",
+    storageBucket: "thruket-site1.appspot.com"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const LABELS = { spotlight: '⭐ Spotlight', resources: 'Resources', requests: 'Neighbors Asking', jobs: 'Help Wanted', events: 'Local Events', kids: 'Kids & Youth', services: 'Services Offered' };
+  const COLORS = ['#fff59d', '#ffc8dd', '#bde0fe', '#caffbf', '#ffd6a5', '#e4c1f9'];
+
+  // Curated local info. Edit this list to add, change, or remove entries.
+  const STATIC = [
+    { category: 'resources', title: 'Edenton-Chowan Food Pantry', description: 'Food assistance for low-income families in Chowan County.\n1370 N. Broad St., Edenton', contact: '(252) 482-2504', url: 'https://www.edenton-chowanpantry.org/' },
+    { category: 'resources', title: 'Edenton Emergency Aid Program', description: 'Emergency help with shelter, food, clothing, and money for utilities, medicine and rent.', contact: 'See the Community Resource Directory', url: 'https://www.townofedenton.com/media/2851' },
+    { category: 'resources', title: 'Chowan County Social Services (DSS)', description: 'Food and nutrition benefits and transportation help.\n100 W. Freemason Circle, Mon-Fri 8am-5pm', contact: 'Apply and details online', url: 'https://www.chowancounty-nc.gov/index.asp?SEC=30DE37A2-4D75-4A23-83E4-476A5A715C92&DE=EBFB2D1E-DBCF-4708-9128-7EEF6BD42A6D' },
+    { category: 'resources', county: 'Region-wide', title: 'Albemarle Area United Way', description: 'Community care, education, financial stability, and health and wellness services.', contact: '(252) 333-1510' },
+    { category: 'resources', title: 'Edenton and Chowan County Community Resource Directory', description: 'The Town of Edenton\'s full directory of local services (Third Edition).', contact: 'Town of Edenton', url: 'https://www.townofedenton.com/media/2851' },
+    { category: 'jobs', title: 'NCWorks Career Center (Chowan)', description: 'Hiring events, job referrals, and work-search workshops for youth and adults.', contact: 'NCWorks', url: 'https://nccareers.org/ncworks-nextgen-program' },
+    { category: 'events', title: 'Edenton Farmers Market', description: 'Saturdays 9am-1pm (April-December). Wednesdays 3-5:30pm (mid-May to September). Local produce, meat, eggs, honey, baked goods, arts and crafts.', contact: 'Downtown Edenton', url: 'https://www.edentonfarmersmarket.org/' },
+    { category: 'events', title: 'Market Festivals', description: 'Fall Community Appreciation Festival: Oct 17\nThanksgiving Market: Nov 25, 12-3pm\nChristmas Festival: Dec 12\nChristmas Market: Dec 23, 12-3pm', contact: 'Edenton Farmers Market', url: 'https://www.edentonfarmersmarket.org/' },
+    { category: 'events', title: 'More local events', description: 'A running community calendar for Edenton.', contact: 'Edenton This Week', url: 'https://edentonthisweek.com/community-events' },
+    { category: 'kids', county: 'Region-wide', title: 'NCWorks NextGen (ages 16-24)', description: 'Job and career coaching for young people. Available in Chowan, Perquimans, Gates, Tyrrell and nearby counties.', contact: 'NCWorks', url: 'https://nccareers.org/ncworks-nextgen-program' },
+    { category: 'kids', county: 'Region-wide', title: 'College of the Albemarle (ages 16-24)', description: 'GED program, job certification program and career readiness workshops.', contact: 'College of the Albemarle' },
+    { category: 'kids', county: 'Region-wide', title: '4-H Youth Programs', description: 'Youth programming through NC Cooperative Extension.', contact: 'NC Cooperative Extension' }
+  ].map((s, i) => ({ county: 'Chowan', ...s, key: 'r' + i }));
+
+  let spotlights = [], posts = [], comments = {}, commentsEnabled = true;
+  let current = 'all';
+  // Region: edit this list to change which counties/areas are accepted (keep in sync with firestore.rules).
+  const COUNTIES = [
+    ['Bertie', 'Bertie'], ['Beaufort', 'Beaufort'], ['Camden', 'Camden'], ['Chowan', 'Chowan (Edenton)'],
+    ['Gates', 'Gates'], ['Hertford', 'Hertford'], ['Martin', 'Martin'], ['Pasquotank', 'Pasquotank (Elizabeth City)'],
+    ['Perquimans', 'Perquimans'], ['Pitt', 'Pitt (western edge)'], ['Tyrrell', 'Tyrrell (Columbia)'],
+    ['Washington', 'Washington'], ['Gateway', 'Gateway: Suffolk / Hampton Roads edge'], ['Region-wide', 'Region-wide']
+  ];
+  let countyFilter = 'all';
+  (function initCounties() {
+    const filter = document.getElementById('countyFilter');
+    const form = document.getElementById('county');
+    const allOpt = document.createElement('option'); allOpt.value = 'all'; allOpt.textContent = 'All of the Inner Banks';
+    filter.appendChild(allOpt);
+    const pick = document.createElement('option'); pick.value = ''; pick.textContent = 'County / area...'; pick.disabled = true; pick.selected = true;
+    form.appendChild(pick);
+    COUNTIES.forEach(([v, label]) => {
+      [filter, form].forEach(sel => { const o = document.createElement('option'); o.value = v; o.textContent = label; sel.appendChild(o); });
+    });
+    filter.onchange = () => { countyFilter = filter.value; render(); };
+  })();
+  const tabParam =new URLSearchParams(location.search).get('tab');
+  if (tabParam && LABELS[tabParam]) current = tabParam;
+  const MAX_AGE_DAYS = 60; // approved posts older than this are hidden automatically
+
+  function renderTabs() {
+    const tabs = document.getElementById('tabs');
+    tabs.innerHTML = '';
+    [['all', 'All'], ...Object.entries(LABELS)].forEach(([key, label]) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      if (key === current) b.className = 'on';
+      b.onclick = () => { current = key; renderTabs(); render(); };
+      tabs.appendChild(b);
+    });
+  }
+
+  function el(tag, text, cls) {
+    const e = document.createElement(tag);
+    if (text != null) e.textContent = text;
+    if (cls) e.className = cls;
+    return e;
+  }
+
+  function shareBar(item) {
+    const url = location.origin + '/community.html#' + item.key;
+    const text = item.title + ' — Inner Banks Exchange';
+    const bar = el('div', null, 'share');
+    if (navigator.share) {
+      const s = el('button', 'Share');
+      s.onclick = () => navigator.share({ title: item.title, text, url }).catch(() => {});
+      bar.appendChild(s);
+    }
+    const mk = (label, href) => { const a = el('a', label); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; return a; };
+    bar.appendChild(mk('Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url)));
+    bar.appendChild(mk('X', 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url)));
+    bar.appendChild(mk('Email', 'mailto:?subject=' + encodeURIComponent(text) + '&body=' + encodeURIComponent(url)));
+    const c = el('button', 'Copy link');
+    c.onclick = async () => { try { await navigator.clipboard.writeText(url); c.textContent = 'Copied!'; } catch { prompt('Copy this link:', url); } };
+    bar.appendChild(c);
+    if (item.key.startsWith('p-')) {
+      const r = el('button', 'Report');
+      r.onclick = async () => {
+        const reason = prompt('What is wrong with this post? (short note)');
+        if (!reason || !reason.trim()) return;
+        try {
+          await db.collection('reports').add({ postId: item.key, reason: reason.trim().slice(0, 200), created_at: firebase.firestore.FieldValue.serverTimestamp() });
+          r.textContent = 'Reported, thank you'; r.disabled = true;
+        } catch (err) { alert('Could not send the report right now.'); }
+      };
+      bar.appendChild(r);
+    }
+    return bar;
+  }
+
+  function commentBox(item) {
+    const list = comments[item.key] || [];
+    const d = el('details', null, 'cm');
+    d.appendChild(el('summary', '💬 Comments (' + list.length + ')'));
+    list.forEach(c => {
+      const row = el('div', null, 'c');
+      row.append(el('b', (c.name || 'Neighbor') + ': '), document.createTextNode(c.text));
+      d.appendChild(row);
+    });
+    const f = document.createElement('form');
+    const n = el('input'); n.placeholder = 'Your name (optional)'; n.maxLength = 40;
+    const t = el('textarea'); t.placeholder = 'Add a comment'; t.maxLength = 300; t.required = true; t.style.minHeight = '50px';
+    const b = el('button', 'Post comment', 'go');
+    const m = el('div', null, 'msg');
+    f.append(n, t, b, m);
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        await db.collection('comments').add({
+          postId: item.key, name: n.value.trim(), text: t.value.trim(),
+          status: 'pending', created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        f.reset(); m.textContent = 'Thanks! Your comment will show once it is reviewed.';
+      } catch (err) { m.textContent = 'Could not post comment right now.'; }
+    };
+    d.appendChild(f);
+    return d;
+  }
+
+  function render() {
+    const list = document.getElementById('list');
+    const shown = [...spotlights, ...STATIC, ...posts].filter(p => (current === 'all' || p.category === current)
+      && (countyFilter === 'all' || p.category === 'spotlight' || p.county === countyFilter || p.county === 'Region-wide'));
+    list.innerHTML = '';
+    if (!shown.length) { list.appendChild(el('div', 'Nothing pinned here yet.', 'empty')); return; }
+    shown.forEach((p, i) => {
+      const note = el('div', null, 'note' + (p.category === 'spotlight' ? ' spot' : ''));
+      note.id = p.key;
+      note.style.background = COLORS[i % COLORS.length];
+      note.style.setProperty('--r', ((i % 5) - 2) * 0.7 + 'deg');
+      note.appendChild(el('span', LABELS[p.category] || p.category, 'badge'));
+      if (p.county) { const cb = el('span', p.county === 'Gateway' ? 'Gateway (Suffolk area)' : p.county, 'badge'); cb.style.marginLeft = '6px'; note.appendChild(cb); }
+      note.appendChild(el('h3', p.title));
+      note.appendChild(el('p', p.description));
+      if (p.contact) note.appendChild(el('div', 'Contact: ' + p.contact, 'meta'));
+      if (p.url) {
+        const a = el('a', 'More info →', 'more');
+        a.href = p.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        note.appendChild(a);
+      }
+      note.appendChild(shareBar(p));
+      if (commentsEnabled && p.commentable && !p.comments_off) note.appendChild(commentBox(p));
+      list.appendChild(note);
+    });
+    focusHash();
+  }
+
+  function focusHash() {
+    const id = location.hash.slice(1);
+    const n = id && document.getElementById(id);
+    if (n && !n.dataset.seen) { n.dataset.seen = '1'; n.classList.add('flash'); n.scrollIntoView({ block: 'center' }); setTimeout(() => n.classList.remove('flash'), 3000); }
+  }
+
+  async function load() {
+    try {
+      const s = await db.collection('settings').doc('site').get();
+      if (s.exists && s.data().comments_enabled === false) commentsEnabled = false;
+    } catch (e) {}
+    try {
+      const sp = await db.collection('spotlights').get();
+      spotlights = sp.docs.map(d => ({ ...d.data(), key: 'sp-' + d.id, category: 'spotlight', contact: '', commentable: true }));
+      spotlights.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+      spotlights.forEach(x => { x.description = x.body; });
+    } catch (e) {}
+    try {
+      const ps = await db.collection('posts').where('status', '==', 'approved').get();
+      posts = ps.docs.map(d => ({ ...d.data(), key: 'p-' + d.id, commentable: true }));
+      posts = posts.filter(p => !p.created_at || (Date.now() / 1000 - p.created_at.seconds) < MAX_AGE_DAYS * 86400);
+      posts.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+    } catch (e) {}
+    try {
+      const cs = await db.collection('comments').where('status', '==', 'approved').get();
+      comments = {};
+      cs.docs.map(d => d.data()).sort((a, b) => (a.created_at?.seconds || 0) - (b.created_at?.seconds || 0))
+        .forEach(c => { (comments[c.postId] = comments[c.postId] || []).push(c); });
+    } catch (e) {}
+    render();
+  }
+
+  document.getElementById('postForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('formMsg');
+    if (document.getElementById('website').value) { msg.textContent = 'Thanks! Your post will appear once it is reviewed.'; return; } // spam trap
+    try {
+      if (Date.now() - Number(localStorage.getItem('ibxLastPost') || 0) < 60000) {
+        msg.style.color = '#c1121f'; msg.textContent = 'Please wait a minute before posting again.'; return;
+      }
+    } catch (err) {}
+    try {
+      await db.collection('posts').add({
+        county: document.getElementById('county').value,
+        category: document.getElementById('category').value,
+        title: document.getElementById('title').value.trim(),
+        description: document.getElementById('description').value.trim(),
+        contact: document.getElementById('contact').value.trim(),
+        status: 'pending',
+        created_at: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      e.target.reset();
+      msg.style.color = '#1d6f66';
+      msg.textContent = 'Thanks! Your post will appear once it is reviewed.';
+      try { localStorage.setItem('ibxLastPost', String(Date.now())); } catch (err) {}
+    } catch (err) {
+      msg.style.color = '#c1121f';
+      msg.textContent = 'Could not submit. Please try again.';
+    }
+  });
+
+  renderTabs();
+  render();
+  load();
+</script>
+</body>
+</html>

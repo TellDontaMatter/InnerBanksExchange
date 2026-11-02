@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>IBX Connect</title>
+<meta name="description" content="Your source for community info on North Carolina's Inner Banks: local resources, events, youth programs and neighbors helping neighbors.">
+<meta property="og:title" content="IBX Connect">
+<meta property="og:description" content="Your source for community info on North Carolina's Inner Banks: local resources, events, youth programs and neighbors helping neighbors.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0b171b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<style>
+/* IBX SHOP BRAND SYSTEM
+   Concept: a dock ledger. Every item is a consignment tag with a lot number,
+   a grade, and its flaws in writing. Salt-paper ground, estuary ink, one
+   channel-marker red-orange for the single action on each tag. */
+:root {
+  --paper: #ecefe9;
+  --paper-2: #e1e6df;
+  --card: #f6f7f2;
+  --manila: #e8d8ad;
+  --manila-ink: #4a3b17;
+  --ink: #10222a;
+  --ink-2: #51656b;
+  --line: #c3ccc4;
+  --sea: #1d5c60;
+  --marker: #d8461a;
+  --marker-ink: #ffffff;
+  --flaw-bg: #f3e3d9;
+  --flaw-ink: #7a2e12;
+  --ok: #2f7a4f;
+
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+
+  --gutter: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b171b; --paper-2: #10222a; --card: #12262d; --manila: #cdbb8a; --manila-ink: #2c2410;
+    --ink: #e7eee9; --ink-2: #93a8ac; --line: #213840; --sea: #5fb3b3; --marker: #ff6a3d;
+    --marker-ink: #1a0a04; --flaw-bg: #2d1c15; --flaw-ink: #f2a98a; --ok: #6fcf97;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b171b; --paper-2: #10222a; --card: #12262d; --manila: #cdbb8a; --manila-ink: #2c2410;
+  --ink: #e7eee9; --ink-2: #93a8ac; --line: #213840; --sea: #5fb3b3; --marker: #ff6a3d;
+  --marker-ink: #1a0a04; --flaw-bg: #2d1c15; --flaw-ink: #f2a98a; --ok: #6fcf97;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--marker); outline-offset: 3px; border-radius: 2px; }
+.wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter-r); }
+.mono { font-family: var(--f-mono); }
+
+/* ---------- Network bar ---------- */
+.network {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--ink); color: var(--paper);
+  height: 38px; overflow: hidden; display: flex; align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+.network-track { display: inline-flex; white-space: nowrap; animation: marquee 48s linear infinite; }
+.network:hover .network-track, .network:focus-within .network-track { animation-play-state: paused; }
+.network a {
+  display: inline-flex; align-items: center; gap: 10px; margin-right: 44px;
+  font: 500 12px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase;
+  text-decoration: none; color: color-mix(in srgb, var(--paper) 78%, transparent);
+  transition: color .2s;
+}
+.network a:hover { color: var(--marker); }
+.network a i { width: 7px; height: 7px; background: var(--marker); display: block; transform: rotate(45deg); }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* ---------- Masthead ---------- */
+.masthead { border-bottom: 1px solid var(--line); }
+.masthead .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 18px; padding-bottom: 18px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+.brand-mark { width: 44px; height: 44px; flex: none; }
+.brand-word { font-family: var(--f-display); font-weight: 900; font-size: 34px; line-height: .85; letter-spacing: .01em; text-transform: uppercase; }
+.brand-word small { display: block; font: 500 10.5px/1 var(--f-mono); letter-spacing: .22em; color: var(--ink-2); margin-top: 6px; }
+.nav { display: flex; gap: 22px; align-items: center; font: 500 13px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; }
+.nav a { text-decoration: none; color: var(--ink-2); padding: 6px 0; border-bottom: 2px solid transparent; }
+.nav a:hover { color: var(--ink); border-color: var(--marker); }
+
+/* ---------- Hero ---------- */
+.hero { position: relative; overflow: hidden; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 56px; align-items: end; padding-top: 72px; padding-bottom: 88px; }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--sea); display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.eyebrow::before { content: ""; width: 34px; height: 2px; background: var(--marker); }
+.hero h1 {
+  font-family: var(--f-display); font-weight: 900; text-transform: uppercase;
+  font-size: clamp(56px, 10.5vw, 148px); line-height: .84; letter-spacing: -.005em; text-wrap: balance;
+}
+.hero h1 em { font-style: normal; color: var(--marker); }
+.hero-sub { max-width: 52ch; margin-top: 28px; font-size: 18px; color: var(--ink-2); }
+.hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; border: 0;
+  font: 600 14px/1 var(--f-body); letter-spacing: .02em; padding: 15px 22px; border-radius: 3px;
+  background: var(--marker); color: var(--marker-ink); transition: transform .15s, filter .15s;
+}
+.btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.btn.ghost:hover { background: var(--ink); color: var(--paper); }
+
+.ledger { background: var(--card); border: 1.5px solid var(--ink); border-radius: 4px; padding: 0; position: relative; }
+.ledger-head { display: flex; justify-content: space-between; padding: 11px 16px; border-bottom: 1.5px solid var(--ink); font: 500 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; background: var(--manila); color: var(--manila-ink); border-radius: 2px 2px 0 0; }
+.ledger-body { padding: 8px 16px 16px; }
+.ledger-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 13px 0; border-bottom: 1px dashed var(--line); font: 500 13px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+.ledger-row b { font: 900 38px/1 var(--f-display); color: var(--ink); letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.ledger-row:last-of-type { border-bottom: 0; }
+.gauge { height: 54px; margin: 6px -16px -16px; position: relative; overflow: hidden; border-top: 1.5px solid var(--ink); border-radius: 0 0 2px 2px; background: var(--paper-2); }
+.gauge svg { position: absolute; left: 0; bottom: 0; width: 200%; height: 100%; animation: tide 9s linear infinite; }
+@keyframes tide { to { transform: translateX(-50%); } }
+.gauge span { position: absolute; right: 14px; top: 10px; font: 500 10.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); z-index: 1; }
+
+.tideline { display: block; width: 100%; height: 38px; color: var(--paper-2); }
+
+/* ---------- Shop ---------- */
+.shop { background: var(--paper-2); padding: 64px 0 96px; flex: 1; }
+.shop-top { display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+.shop-top h2 { font: 900 clamp(38px, 6vw, 64px)/.9 var(--f-display); text-transform: uppercase; }
+.shop-top p { color: var(--ink-2); max-width: 46ch; margin-top: 10px; }
+.count { font: 500 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1.5px solid var(--ink); }
+.chip {
+  font: 500 12.5px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  padding: 11px 15px; border-radius: 999px; background: transparent; color: var(--ink); border: 1.5px solid var(--line);
+  transition: background .15s, border-color .15s, color .15s;
+}
+.chip:hover { border-color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.chip sup { font-size: 10px; margin-left: 6px; opacity: .65; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 28px; }
+
+/* ---------- Tag card ---------- */
+.tag {
+  background: var(--card); border: 1.5px solid var(--ink); border-radius: 4px; overflow: hidden;
+  display: flex; flex-direction: column; min-width: 0; position: relative;
+  transition: transform .2s, box-shadow .2s;
+}
+.tag:hover { transform: translateY(-4px); box-shadow: 6px 6px 0 var(--ink); }
+.tag-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--manila); color: var(--manila-ink); padding: 10px 14px 10px 16px;
+  border-bottom: 1.5px solid var(--ink); font: 500 11.5px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase;
+}
+.tag-top .hole { width: 14px; height: 14px; border-radius: 50%; background: var(--paper-2); border: 1.5px solid var(--ink); flex: none; }
+.tag-img { aspect-ratio: 4 / 3; background: var(--paper-2); position: relative; overflow: hidden; border-bottom: 1.5px solid var(--ink); }
+.tag-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+.tag:hover .tag-img img { transform: scale(1.04); }
+.grade {
+  position: absolute; left: 12px; bottom: 12px; display: flex; align-items: stretch;
+  background: var(--card); border: 1.5px solid var(--ink); border-radius: 3px; overflow: hidden;
+}
+.grade b { font: 900 22px/1 var(--f-display); padding: 6px 10px 5px; background: var(--ink); color: var(--paper); }
+.grade span { font: 500 10.5px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 0 10px; display: flex; align-items: center; }
+.sold-stamp {
+  position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--paper) 62%, transparent); backdrop-filter: grayscale(1);
+}
+.sold-stamp span { font: 900 54px/1 var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--marker); border: 5px solid var(--marker); padding: 6px 20px 2px; transform: rotate(-9deg); }
+.tag-body { padding: 18px 18px 18px; display: flex; flex-direction: column; flex: 1; gap: 10px; }
+.tag-kind { font: 500 11.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sea); }
+.tag-title { font: 800 26px/1.02 var(--f-display); text-transform: uppercase; letter-spacing: .005em; text-wrap: balance; }
+.specs { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13.5px; }
+.specs dt { font: 500 11px/1.9 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.specs dd { color: var(--ink); }
+.flaws { font-size: 13px; background: var(--flaw-bg); color: var(--flaw-ink); border-radius: 3px; padding: 9px 11px; }
+.flaws b { font: 600 10.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; display: block; margin-bottom: 3px; }
+.tag-foot { margin-top: auto; padding-top: 14px; border-top: 1.5px dashed var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.price { font: 900 40px/1 var(--f-display); letter-spacing: .005em; font-variant-numeric: tabular-nums; }
+.price sup { font-size: 18px; vertical-align: top; position: relative; top: 4px; margin-right: 2px; }
+.price s { text-decoration-thickness: 3px; color: var(--ink-2); }
+.buy { padding: 13px 18px; }
+.buy.off { background: transparent; color: var(--ink-2); box-shadow: inset 0 0 0 1.5px var(--line); cursor: default; pointer-events: none; }
+.empty { grid-column: 1 / -1; padding: 48px; text-align: center; border: 1.5px dashed var(--ink-2); font: 500 14px var(--f-mono); color: var(--ink-2); }
+
+/* ---------- Entry tiles + search (Exchange) ---------- */
+.tiles { background: var(--paper-2); padding: 0 0 8px; }
+.tiles .wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; padding-bottom: 40px; }
+.tile {
+  display: flex; flex-direction: column; gap: 6px; text-decoration: none; min-width: 0;
+  background: var(--card); border: 1.5px solid var(--ink); border-radius: 4px; padding: 18px 20px 20px;
+  transition: transform .2s, box-shadow .2s;
+}
+.tile:hover { transform: translateY(-4px); box-shadow: 6px 6px 0 var(--ink); }
+.tile .k { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--sea); display: flex; justify-content: space-between; align-items: center; }
+.tile .k i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--paper-2); }
+.tile h3 { font: 900 32px/.95 var(--f-display); text-transform: uppercase; margin-top: 8px; }
+.tile p { color: var(--ink-2); font-size: 14.5px; }
+.tile .go { margin-top: 8px; font: 600 13px var(--f-body); color: var(--marker); }
+.search { position: relative; width: 100%; max-width: 360px; }
+.search input {
+  width: 100%; padding: 13px 16px; background: var(--card); color: var(--ink);
+  border: 1.5px solid var(--ink); border-radius: 3px; font: 500 14px var(--f-body);
+}
+.search input::placeholder { color: var(--ink-2); }
+.search input:focus-visible { outline: 3px solid var(--marker); outline-offset: 2px; }
+.shop-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+@media (max-width: 700px) { .shop-tools { align-items: stretch; width: 100%; } .search { max-width: none; } }
+
+/* ---------- Standard ---------- */
+.standard { background: var(--ink); color: var(--paper); padding: 80px 0; }
+.standard .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 56px; }
+.standard h2 { font: 900 clamp(40px, 6vw, 72px)/.88 var(--f-display); text-transform: uppercase; text-wrap: balance; }
+.standard h2 em { font-style: normal; color: var(--marker); }
+.standard .lead { margin-top: 18px; color: color-mix(in srgb, var(--paper) 72%, transparent); max-width: 40ch; }
+.scale { list-style: none; display: grid; gap: 0; border-top: 1px solid color-mix(in srgb, var(--paper) 25%, transparent); }
+.scale li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 18px; padding: 22px 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 25%, transparent); align-items: start; }
+.scale .g { font: 900 64px/.8 var(--f-display); color: var(--marker); }
+.scale h3 { font: 800 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 6px; }
+.scale p { color: color-mix(in srgb, var(--paper) 72%, transparent); font-size: 15px; max-width: 56ch; }
+
+/* ---------- Footer ---------- */
+footer { border-top: 1.5px solid var(--ink); background: var(--paper); }
+.foot { display: grid; grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr)); gap: 40px; padding-top: 48px; padding-bottom: 36px; }
+.foot h4 { font: 500 11.5px/1 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 16px; }
+.foot ul { list-style: none; display: grid; gap: 10px; }
+.foot a { text-decoration: none; font-weight: 500; }
+.foot a:hover { color: var(--marker); }
+.foot p { color: var(--ink-2); font-size: 14px; max-width: 36ch; margin-top: 14px; }
+.legal { border-top: 1px solid var(--line); padding-top: 18px; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); font: 400 12px var(--f-mono); letter-spacing: .05em; color: var(--ink-2); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 48px; padding-bottom: 64px; }
+  .standard .wrap { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .foot { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .foot > div:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .nav { display: none; }
+  .brand-word { font-size: 30px; }
+  .hero-sub { font-size: 16px; }
+  .scale li { grid-template-columns: 56px minmax(0, 1fr); }
+  .scale .g { font-size: 50px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .network-track, .gauge svg { animation: none; }
+  .tag, .tag-img img, .btn { transition: none; }
+}
+.foot .soon { color: var(--ink-2); font-size: 14px; }
+
+/* ---------- Board (Connect + Help) ---------- */
+:root { --bad: #c4452a; --good: #2f7a4f; }
+:root[data-theme="dark"] { --bad: #ff8a63; --good: #6fcf97; }
+.nav a.on { color: var(--ink); border-color: var(--marker); }
+.board-sec { background: var(--paper-2); padding: 56px 0 96px; scroll-margin-top: 38px; }
+.board-top { display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+.board-top h2 { font: 900 clamp(38px, 6vw, 64px)/.9 var(--f-display); text-transform: uppercase; }
+.board-top p { color: var(--ink-2); max-width: 46ch; margin-top: 10px; }
+.board-sec select, .board-sec input, .board-sec textarea {
+  width: 100%; padding: 12px 14px; background: var(--card); color: var(--ink);
+  border: 1.5px solid var(--ink); border-radius: 3px; font: 500 14px var(--f-body);
+}
+.board-sec textarea { min-height: 84px; resize: vertical; }
+.board-sec ::placeholder { color: var(--ink-2); }
+.board-tools { width: 100%; max-width: 320px; display: grid; gap: 10px; }
+.tiles { position: relative; z-index: 5; }
+.tile .th { color: inherit; text-decoration: none; }
+.tile .th:hover h3 { color: var(--marker); }
+.tsearch { position: relative; display: flex; margin-top: 10px; }
+.tsearch input { flex: 1; min-width: 0; padding: 12px 14px; background: var(--paper); color: var(--ink); border: 1.5px solid var(--ink); border-right: 0; border-radius: 3px 0 0 3px; font: 500 14px var(--f-body); }
+.tsearch input::placeholder { color: var(--ink-2); }
+.tsearch button { width: 48px; border: 1.5px solid var(--marker); background: var(--marker); color: var(--marker-ink); border-radius: 0 3px 3px 0; font: 700 18px var(--f-body); cursor: pointer; }
+.tsearch button:hover { filter: brightness(1.07); }
+.tresults { position: absolute; left: 0; right: 0; top: calc(100% + 8px); z-index: 30; list-style: none; margin: 0; padding: 6px; background: var(--card); border: 1.5px solid var(--ink); border-radius: 4px; box-shadow: 6px 6px 0 var(--ink); max-height: 340px; overflow: auto; }
+.tresults a { display: block; padding: 10px; border-radius: 3px; color: var(--ink); text-decoration: none; font: 600 14px/1.3 var(--f-body); cursor: pointer; }
+.tresults a:hover, .tresults a:focus-visible { background: var(--paper-2); }
+.tresults .rt { display: block; font: 500 10.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sea); margin-bottom: 4px; }
+.tresults a.all { color: var(--marker); }
+.tresults[hidden] { display: none !important; }
+.foot .soon { color: var(--ink-2); font-size: 14px; }
+.formbox { background: var(--card); border: 1.5px solid var(--ink); border-radius: 4px; margin-bottom: 28px; max-width: 640px; }
+.formbox summary { cursor: pointer; padding: 14px 18px; font: 600 14px var(--f-body); letter-spacing: .02em; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.formbox summary::-webkit-details-marker { display: none; }
+.formbox summary::after { content: "+"; font: 600 20px var(--f-mono); color: var(--marker); }
+.formbox[open] summary::after { content: "\2212"; }
+.formbox form { display: grid; gap: 10px; padding: 0 18px 18px; }
+.msg { font-size: 13px; color: var(--ink-2); }
+.go { background: var(--marker); color: var(--marker-ink); border: 0; border-radius: 3px; padding: 13px 18px; font: 600 14px var(--f-body); cursor: pointer; }
+.go:hover { filter: brightness(1.07); }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1.5px solid var(--ink); }
+.tabs button { font: 500 12.5px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; padding: 11px 15px; border-radius: 999px; background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.tabs button:hover { border-color: var(--ink); }
+.tabs button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 40px 28px; }
+.note { position: relative; background: var(--card); border: 1.5px solid var(--ink); border-top: 30px solid var(--manila); border-radius: 4px; padding: 18px; min-width: 0; word-wrap: break-word; display: flex; flex-direction: column; gap: 8px; transition: transform .2s, box-shadow .2s; }
+.note:hover { transform: translateY(-4px); box-shadow: 6px 6px 0 var(--ink); }
+.note::before { content: ""; position: absolute; top: -23px; right: 14px; width: 14px; height: 14px; border-radius: 50%; background: var(--paper-2); border: 1.5px solid var(--ink); }
+.note.spot { border-top-color: var(--marker); }
+.note.flash { outline: 3px solid var(--marker); outline-offset: 3px; }
+.badge { display: inline-block; align-self: flex-start; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sea); }
+.note > .badge + .badge { margin-left: 0 !important; color: var(--ink-2); }
+.note h3 { font: 800 26px/1.02 var(--f-display); text-transform: uppercase; text-wrap: balance; }
+.note p { font-size: 14.5px; white-space: pre-wrap; color: var(--ink); }
+.meta { font: 500 12px/1.5 var(--f-mono); color: var(--ink-2); letter-spacing: .02em; }
+.more { color: var(--marker); font: 600 14px var(--f-body); text-decoration: none; }
+.more:hover { text-decoration: underline; }
+.share { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 12px; border-top: 1.5px dashed var(--line); }
+.share a, .share button { font: 500 11px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; background: transparent; border: 1.5px solid var(--line); border-radius: 999px; padding: 7px 10px; color: var(--ink-2); text-decoration: none; cursor: pointer; }
+.share a:hover, .share button:hover { border-color: var(--ink); color: var(--ink); }
+details.cm { font-size: 14px; }
+details.cm summary { cursor: pointer; font: 500 11.5px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--sea); }
+.cm .c { background: var(--paper-2); border-radius: 3px; padding: 8px 10px; margin-top: 8px; font-size: 13.5px; }
+.cm form { display: grid; gap: 6px; margin-top: 10px; }
+.empty { grid-column: 1 / -1; padding: 48px 20px; text-align: center; border: 1.5px dashed var(--ink-2); font: 500 14px var(--f-mono); color: var(--ink-2); }
+.fine { margin-top: 36px; font-size: 13px; color: var(--ink-2); max-width: 70ch; }
+/* ---------- Marsh palette: blackwater, straw, golden-hour sun (Albemarle shoreline) ---------- */
+:root[data-theme="dark"] {
+  --paper: #12150e; --paper-2: #1a1f14; --card: #20271a; --line: #323a26;
+  --ink: #f3eedb; --ink-2: #b9bc9f; --sea: #8fbfb6;
+  --marker: #f2b632; --marker-ink: #231a05;
+  --manila: #dcc98c; --manila-ink: #3a2e0e;
+  --flaw-bg: #33250f; --flaw-ink: #f2cf8a;
+}
+.hero { background: radial-gradient(70% 90% at 88% 100%, rgba(242,182,50,.16), transparent 70%); }
+
+/* ---------- Today panel (ticker / weather / announcements) ---------- */
+.ledger.live .ledger-body { padding-top: 4px; }
+.lrow { display: flex; flex-direction: column; gap: 7px; padding: 14px 0; border-bottom: 1px dashed var(--line); min-width: 0; }
+.lrow .lab { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--sea); }
+.lrow .val { font: 600 15px/1.35 var(--f-body); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow .val.wrap { white-space: normal; overflow: visible; }
+.lrow .alert { color: var(--marker); }
+.tick { overflow: hidden; white-space: nowrap; -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); }
+.tick-track { display: inline-flex; white-space: nowrap; font: 600 15px/1.35 var(--f-body); animation: marquee var(--dur, 40s) linear infinite; }
+.tick:hover .tick-track, .tick:focus-within .tick-track { animation-play-state: paused; }
+.tick-group { display: inline-flex; flex: none; }
+.ti { color: var(--ink); text-decoration: none; margin-right: 38px; }
+.ti:hover { color: var(--marker); }
+.ti b { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--marker); margin-right: 8px; }
+.ledger.live .gauge { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .tick { overflow-x: auto; } .tick-track { animation: none; } }</style>
+</head>
+<body>
+
+<header class="network" aria-label="Inner Banks Exchange network">
+  <div class="network-track">
+    <a href="https://ibxshop.web.app/" target="_blank" rel="noopener"><i></i>IBX Shop: Local Goods &amp; Gear</a>
+    <a href="https://ibxconnect.web.app/" target="_blank" rel="noopener"><i></i>IBX Connect: Community Board</a>
+    <a href="https://ibxhelp.web.app/" target="_blank" rel="noopener"><i></i>IBX Help: Help Wanted &amp; Services Offered</a>
+    <a href="https://seeyouryou.web.app" target="_blank" rel="noopener"><i></i>S.E.E. Engine: Decision Evaluation</a>
+    <a href="https://movebyphilc.netlify.app" target="_blank" rel="noopener"><i></i>Route | Philc: Military Relocation Routing</a>
+    <a href="https://ibxshop.web.app/" target="_blank" rel="noopener" aria-hidden="true" tabindex="-1"><i></i>IBX Shop: Local Goods &amp; Gear</a>
+    <a href="https://ibxconnect.web.app/" target="_blank" rel="noopener" aria-hidden="true" tabindex="-1"><i></i>IBX Connect: Community Board</a>
+    <a href="https://ibxhelp.web.app/" target="_blank" rel="noopener" aria-hidden="true" tabindex="-1"><i></i>IBX Help: Help Wanted &amp; Services Offered</a>
+    <a href="https://seeyouryou.web.app" target="_blank" rel="noopener" aria-hidden="true" tabindex="-1"><i></i>S.E.E. Engine: Decision Evaluation</a>
+    <a href="https://movebyphilc.netlify.app" target="_blank" rel="noopener" aria-hidden="true" tabindex="-1"><i></i>Route | Philc: Military Relocation Routing</a>
+  </div>
+</header>
+
+<div class="masthead">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Inner Banks Exchange home">
+      <svg class="brand-mark" viewBox="0 0 48 48" role="img" aria-hidden="true">
+        <path d="M8 4h32a4 4 0 0 1 4 4v32a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4z" fill="var(--ink)"/>
+        <circle cx="38" cy="10" r="2.6" fill="var(--paper)"/>
+        <path d="M4 30c4-3 8-3 12 0s8 3 12 0 8-3 12 0 4 1 4 1v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" fill="var(--marker)"/>
+        <path d="M11 11h4v13h-4zM18.5 11H22l3 5.2 3-5.2h3.5l-4.7 7 4.9 6.5h-3.7L25 19.1 21.5 24.5H18l4.9-6.5z" fill="var(--paper)"/>
+      </svg>
+      <span class="brand-word">Inner Banks <small>Exchange &middot; North Carolina</small></span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="https://ibxshop.web.app/">Shop</a>
+      <a href="https://ibxconnect.web.app/" class="on">Community Board</a>
+      <a href="https://ibxhelp.web.app/">Help Wanted</a>
+    </nav>
+  </div>
+</div>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap" style="">
+      <div>
+        <div class="eyebrow">North Carolina's Inner Banks</div>
+        <h1>Your Source for<br><em>Community</em><br>Info</h1>
+        <p class="hero-sub">What's happening, who's hiring and where to find help, all posted by your Inner Banks neighbors.</p>
+        <div class="hero-cta">
+          <a class="btn" href="#board">Open the board</a>
+          <a class="btn ghost" href="https://ibxshop.web.app/">Visit the shop</a>
+        </div>
+      </div>
+      <aside class="ledger live" aria-label="Today on the Inner Banks">
+        <div class="ledger-head"><span>Today on the Inner Banks</span> <span id="ledgerDate">Today</span></div>
+        <div class="ledger-body">
+          <div class="lrow"><span class="lab">Latest on the board</span><div class="tick" id="tick"><div class="tick-track" id="tickTrack"></div></div></div>
+          <div class="lrow"><span class="lab">Weather &middot; Edenton</span><div class="val wrap" id="wxVal">Loading the forecast...</div></div>
+          <div class="lrow"><span class="lab">Announcements</span><div class="val" id="noteVal">No announcements right now.</div></div>
+          <div class="gauge" aria-hidden="true">
+            <svg viewBox="0 0 400 54" preserveAspectRatio="none">
+              <path d="M0 26c25-14 50-14 75 0s50 14 75 0 50-14 75 0 50 14 75 0 50-14 75 0 50 14 75 0 50-14 75 0 50 14 75 0V54H0z" fill="var(--sea)" opacity=".28"/>
+              <path d="M0 34c25-12 50-12 75 0s50 12 75 0 50-12 75 0 50 12 75 0 50-12 75 0 50 12 75 0 50-12 75 0 50 12 75 0V54H0z" fill="var(--sea)"/>
+            </svg>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <svg class="tideline" viewBox="0 0 1200 38" preserveAspectRatio="none" aria-hidden="true"><path d="M0 38V20c100-24 200-24 300 0s200 24 300 0 200-24 300 0 200 24 300 0v18z" fill="currentColor"/></svg>
+  </section>
+
+  <section class="tiles" aria-label="Where to go">
+    <div class="wrap">
+      <div class="tile" data-scope="board"><span class="k">Board<i aria-hidden="true"></i></span><a class="th" href="#board"><h3>Community Board</h3></a><p>Events, youth programs and local resources.</p><form class="tsearch" role="search" autocomplete="off"><input type="search" placeholder="Try: food assistance, town hall" aria-label="Search: Community Board" maxlength="60"><button type="submit" aria-label="Search Community Board">&rarr;</button><ul class="tresults" hidden></ul></form></div>
+      <div class="tile" data-scope="help"><span class="k">Help<i aria-hidden="true"></i></span><a class="th" href="https://ibxhelp.web.app/"><h3>Help Wanted</h3></a><p>Jobs and services offered by neighbors.</p><form class="tsearch" role="search" autocomplete="off"><input type="search" placeholder="Try: part-time, babysitter" aria-label="Search: Help Wanted" maxlength="60"><button type="submit" aria-label="Search Help Wanted">&rarr;</button><ul class="tresults" hidden></ul></form></div>
+      <div class="tile" data-scope="shop"><span class="k">Shop<i aria-hidden="true"></i></span><a class="th" href="https://ibxshop.web.app/"><h3>The Shop</h3></a><p>Browse what is available now, at flat prices.</p><form class="tsearch" role="search" autocomplete="off"><input type="search" placeholder="Try: lamp, jacket, size L" aria-label="Search: The Shop" maxlength="60"><button type="submit" aria-label="Search The Shop">&rarr;</button><ul class="tresults" hidden></ul></form></div>
+    </div>
+  </section>
+
+  <section class="board-sec" id="board" aria-labelledby="boardHeading">
+    <div class="wrap">
+      <div class="board-top">
+        <div>
+          <h2 id="boardHeading">The board</h2>
+          <p>Pinned by neighbors and reviewed before they appear. Pick a tab, or add your own post.</p>
+        </div>
+        <div class="board-tools">
+          <input type="search" id="boardSearch" placeholder="Search the board" aria-label="Search the board" maxlength="60" autocomplete="off">
+          <select id="countyFilter" aria-label="Show listings for"></select>
+        </div>
+      </div>
+
+      <details class="formbox">
+        <summary>Post to the board</summary>
+        <form id="postForm">
+          <select id="county" required aria-label="County or area"></select>
+          <select id="category" required aria-label="Type of post">
+            <option value="requests">Neighbors Asking (request / suggestion)</option>
+            <option value="events">Local Event</option>
+            <option value="kids">Kids &amp; Youth Program</option>
+          </select>
+          <input id="title" placeholder="Title" maxlength="100" required>
+          <textarea id="description" placeholder="Details (what, where, when, pay, ages...)" maxlength="1000" required></textarea>
+          <input id="contact" placeholder="How to reach you (phone or email)" maxlength="150" required>
+          <input id="website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
+          <p class="msg">Inner Banks listings only (nearby Suffolk or Hampton Roads posts are accepted only if they serve Inner Banks residents). Please keep it kind and local. Don't post private details about other people, especially children. Posts that pass our automatic checks (no links, no scam or rude wording, a phone or email to reach you) go live right away. We remove anything that breaks these rules. Listings aren't endorsements by Inner Banks Exchange.</p>
+          <button class="go" type="submit">Post it</button>
+          <div class="msg" id="formMsg"></div>
+        </form>
+      </details>
+
+      <div class="tabs" id="tabs" role="group" aria-label="Filter by category"></div>
+      <div class="board" id="list"><div class="empty">Loading...</div></div>
+      <p class="fine">New posts and comments are reviewed before they appear. Local resource info was compiled in October 2026 from public sources. Phone numbers, hours and dates can change, so call ahead or check the link.</p>
+    </div>
+  </section>
+</main>
+
+<footer id="network">
+  <div class="wrap foot">
+    <div>
+      <a class="brand" href="#top" aria-label="Back to top"><svg class="brand-mark" viewBox="0 0 48 48" role="img" aria-hidden="true">
+        <path d="M8 4h32a4 4 0 0 1 4 4v32a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4z" fill="var(--ink)"/>
+        <circle cx="38" cy="10" r="2.6" fill="var(--paper)"/>
+        <path d="M4 30c4-3 8-3 12 0s8 3 12 0 8-3 12 0 4 1 4 1v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" fill="var(--marker)"/>
+        <path d="M11 11h4v13h-4zM18.5 11H22l3 5.2 3-5.2h3.5l-4.7 7 4.9 6.5h-3.7L25 19.1 21.5 24.5H18l4.9-6.5z" fill="var(--paper)"/>
+      </svg><span class="brand-word">Inner Banks <small>Exchange &middot; North Carolina</small></span></a>
+      <p>A shop, a community board and a help-wanted list for North Carolina's Inner Banks.</p>
+    </div>
+    <div>
+      <h4>Explore</h4>
+      <ul>
+        <li><a href="https://ibxshop.web.app/">IBX Shop</a></li>
+        <li><a href="https://ibxconnect.web.app/">Community Board</a></li>
+        <li><a href="https://ibxconnect.web.app/?tab=resources">Local resources</a></li>
+        <li><a href="https://ibxhelp.web.app/">Help Wanted &amp; Services</a></li>
+        <li><a href="https://ibxconnect.web.app/about.html">About &amp; contact</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Network</h4>
+      <ul>
+        <li><a href="https://seeyouryou.web.app" target="_blank" rel="noopener">S.E.E. Engine</a></li>
+        <li><span class="soon">Household Knowledge Bank (coming soon)</span></li>
+        <li><a href="https://movebyphilc.netlify.app" target="_blank" rel="noopener">Route | Philc</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="wrap legal">
+    <span>&copy; 2026 Inner Banks Exchange. Direct local inventory network.</span>
+    <span>Powered by Firebase &amp; Stripe</span>
+  </div>
+</footer>
+
+<script>
+const firebaseConfig = {
+    projectId: "thruket-site1",
+    authDomain: "thruket-site1.firebaseapp.com",
+    storageBucket: "thruket-site1.appspot.com"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const LABELS = { spotlight: 'Spotlight', resources: 'Resources', requests: 'Neighbors Asking', jobs: 'Help Wanted', events: 'Local Events', kids: 'Kids & Youth', services: 'Services Offered' };
+  const CONFIG = {here:'board',tabs:['spotlight','resources','requests','events','kids']};
+  const ALLOWED = new Set(CONFIG.tabs);
+  /* ---- search helpers (shared by the board filter and the tile search boxes) ---- */
+  let boardQuery = '';
+  const STOP = new Set(['a','an','the','for','in','of','to','near','me','my','and','or','on','at','is','are','where','how','do','i','can','get','find','need','nearby','local']);
+  const SYN = [['food','pantry','meals','groceries','nutrition','snap','hunger'], ['assistance','aid','help','benefits','support'], ['job','jobs','hiring','career','employment','work','wanted'], ['health','clinic','medical','healthcare','doctor','nurse'], ['hall','government','council','clerk'], ['kid','kids','youth','children','teens'], ['housing','rent','shelter'], ['event','events','festival','market','calendar']];
+  function qGroups(q) {
+    return String(q || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => w && !STOP.has(w)).map(w => {
+      const g = new Set([w]);
+      SYN.forEach(list => { if (list.includes(w)) list.forEach(x => g.add(x)); });
+      return [...g];
+    });
+  }
+  function qScore(groups, hay) { hay = String(hay).toLowerCase(); return groups.filter(g => g.some(w => hay.includes(w))).length; }
+  function qNeed(n) { return n <= 2 ? n : Math.ceil(n * 0.6); }
+  function hayOf(p) { return [p.title, p.description, p.contact, p.county, LABELS[p.category]].filter(Boolean).join(' '); }
+  function matchesBoardQuery(p) { const g = qGroups(boardQuery); return !g.length || qScore(g, hayOf(p)) >= qNeed(g.length); }
+  const COLORS = ['#fff59d', '#ffc8dd', '#bde0fe', '#caffbf', '#ffd6a5', '#e4c1f9'];
+
+  // Curated local info. Edit this list to add, change, or remove entries.
+  const STATIC = [
+    { category: 'resources', title: 'Edenton-Chowan Food Pantry', description: 'Food assistance for low-income families in Chowan County.\n1370 N. Broad St., Edenton', contact: '(252) 482-2504', url: 'https://www.edenton-chowanpantry.org/' },
+    { category: 'resources', title: 'Edenton Emergency Aid Program', description: 'Emergency help with shelter, food, clothing, and money for utilities, medicine and rent.', contact: 'See the Community Resource Directory', url: 'https://www.townofedenton.com/media/2851' },
+    { category: 'resources', title: 'Chowan County Social Services (DSS)', description: 'Food and nutrition benefits and transportation help.\n100 W. Freemason Circle, Mon-Fri 8am-5pm', contact: 'Apply and details online', url: 'https://www.chowancounty-nc.gov/index.asp?SEC=30DE37A2-4D75-4A23-83E4-476A5A715C92&DE=EBFB2D1E-DBCF-4708-9128-7EEF6BD42A6D' },
+    { category: 'resources', county: 'Region-wide', title: 'Albemarle Area United Way', description: 'Community care, education, financial stability, and health and wellness services.', contact: '(252) 333-1510', url: 'https://www.aaunitedway.org/' },
+    { category: 'resources', title: 'Edenton and Chowan County Community Resource Directory', description: 'The Town of Edenton\'s full directory of local services (Third Edition).', contact: 'Town of Edenton', url: 'https://www.townofedenton.com/media/2851' },
+    { category: 'jobs', title: 'NCWorks Career Center (Chowan)', description: 'Hiring events, job referrals, and work-search workshops for youth and adults.', contact: 'NCWorks', url: 'https://nccareers.org/ncworks-nextgen-program' },
+    { category: 'events', title: 'Edenton Farmers Market', description: 'Saturdays 9am-1pm (April-December). Wednesdays 3-5:30pm (mid-May to September). Local produce, meat, eggs, honey, baked goods, arts and crafts.', contact: 'Downtown Edenton', url: 'https://www.edentonfarmersmarket.org/' },
+    { category: 'events', title: 'Market Festivals', description: 'Fall Community Appreciation Festival: Oct 17\nThanksgiving Market: Nov 25, 12-3pm\nChristmas Festival: Dec 12\nChristmas Market: Dec 23, 12-3pm', contact: 'Edenton Farmers Market', url: 'https://www.edentonfarmersmarket.org/' },
+    { category: 'events', title: 'More local events', description: 'A running community calendar for Edenton.', contact: 'Edenton This Week', url: 'https://edentonthisweek.com/community-events' },
+    { category: 'kids', county: 'Region-wide', title: 'NCWorks NextGen (ages 16-24)', description: 'Job and career coaching for young people. Available in Chowan, Perquimans, Gates, Tyrrell and nearby counties.', contact: 'NCWorks', url: 'https://nccareers.org/ncworks-nextgen-program' },
+    { category: 'kids', county: 'Region-wide', title: 'College of the Albemarle (ages 16-24)', description: 'GED program, job certification program and career readiness workshops.', contact: 'College of the Albemarle', url: 'https://www.albemarle.edu/programs-classes/noncredit/courses/high-school-equivalency/' },
+    { category: 'kids', county: 'Region-wide', title: '4-H Youth Programs', description: 'Youth programming through NC Cooperative Extension.', contact: 'NC Cooperative Extension', url: 'https://chowan.ces.ncsu.edu/' },
+    { category: 'resources', title: 'Chowan County Health Department', description: 'Public health services for Chowan County, run by Albemarle Regional Health Services.\n202 W. Hicks St., Edenton. Call to confirm services and hours.', contact: '(252) 482-6003', url: 'https://www.publichealth.nc.gov/contact/LHD' },
+    { category: 'resources', title: 'Edenton Town Hall', description: 'Town of Edenton offices, council information and staff directory.\n400 S. Broad St., Edenton (side entrance on W. King St.)', contact: 'townofedentonnc.gov', url: 'https://www.townofedentonnc.gov/town-hall' },
+    { category: 'resources', title: 'Chowan County Government', description: 'Official county government website.', contact: 'chowancounty-nc.gov', url: 'https://www.chowancounty-nc.gov/' },
+    { category: 'resources', county: 'Region-wide', title: 'NC 211', description: 'Free, confidential help finding food, housing, health care and other local services. Dial 2-1-1.', contact: '2-1-1', url: 'https://nc211.org/' }
+  ].map((s, i) => ({ county: 'Chowan', ...s, key: 'r' + i }));
+
+  let spotlights = [], posts = [], comments = {}, commentsEnabled = true;
+  let current = 'all';
+  // Region: edit this list to change which counties/areas are accepted (keep in sync with firestore.rules).
+  const COUNTIES = [
+    ['Bertie', 'Bertie'], ['Beaufort', 'Beaufort'], ['Camden', 'Camden'], ['Chowan', 'Chowan (Edenton)'],
+    ['Gates', 'Gates'], ['Hertford', 'Hertford'], ['Martin', 'Martin'], ['Pasquotank', 'Pasquotank (Elizabeth City)'],
+    ['Perquimans', 'Perquimans'], ['Pitt', 'Pitt (western edge)'], ['Tyrrell', 'Tyrrell (Columbia)'],
+    ['Washington', 'Washington'], ['Gateway', 'Gateway: Suffolk / Hampton Roads edge'], ['Region-wide', 'Region-wide']
+  ];
+  let countyFilter = 'all';
+  (function initCounties() {
+    const filter = document.getElementById('countyFilter');
+    const form = document.getElementById('county');
+    const allOpt = document.createElement('option'); allOpt.value = 'all'; allOpt.textContent = 'All of the Inner Banks';
+    filter.appendChild(allOpt);
+    const pick = document.createElement('option'); pick.value = ''; pick.textContent = 'County / area...'; pick.disabled = true; pick.selected = true;
+    form.appendChild(pick);
+    COUNTIES.forEach(([v, label]) => {
+      [filter, form].forEach(sel => { const o = document.createElement('option'); o.value = v; o.textContent = label; sel.appendChild(o); });
+    });
+    filter.onchange = () => { countyFilter = filter.value; render(); };
+  })();
+  const tabParam =new URLSearchParams(location.search).get('tab');
+  if (tabParam && ALLOWED.has(tabParam)) current = tabParam;
+  const MAX_AGE_DAYS = 60; // approved posts older than this are hidden automatically
+
+  function renderTabs() {
+    const tabs = document.getElementById('tabs');
+    tabs.innerHTML = '';
+    [['all', 'All'], ...CONFIG.tabs.map(k => [k, LABELS[k]])].forEach(([key, label]) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      if (key === current) b.className = 'on';
+      b.onclick = () => { current = key; renderTabs(); render(); };
+      tabs.appendChild(b);
+    });
+  }
+
+  function el(tag, text, cls) {
+    const e = document.createElement(tag);
+    if (text != null) e.textContent = text;
+    if (cls) e.className = cls;
+    return e;
+  }
+
+  function shareBar(item) {
+    const url = location.origin + location.pathname + '#' + item.key;
+    const text = item.title + ' — Inner Banks Exchange';
+    const bar = el('div', null, 'share');
+    if (navigator.share) {
+      const s = el('button', 'Share');
+      s.onclick = () => navigator.share({ title: item.title, text, url }).catch(() => {});
+      bar.appendChild(s);
+    }
+    const mk = (label, href) => { const a = el('a', label); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; return a; };
+    bar.appendChild(mk('Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url)));
+    bar.appendChild(mk('X', 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url)));
+    bar.appendChild(mk('Email', 'mailto:?subject=' + encodeURIComponent(text) + '&body=' + encodeURIComponent(url)));
+    const c = el('button', 'Copy link');
+    c.onclick = async () => { try { await navigator.clipboard.writeText(url); c.textContent = 'Copied!'; } catch { prompt('Copy this link:', url); } };
+    bar.appendChild(c);
+    if (item.key.startsWith('p-')) {
+      const r = el('button', 'Report');
+      r.onclick = async () => {
+        const reason = prompt('What is wrong with this post? (short note)');
+        if (!reason || !reason.trim()) return;
+        try {
+          await db.collection('reports').add({ postId: item.key, reason: reason.trim().slice(0, 200), created_at: firebase.firestore.FieldValue.serverTimestamp() });
+          r.textContent = 'Reported, thank you'; r.disabled = true;
+        } catch (err) { alert('Could not send the report right now.'); }
+      };
+      bar.appendChild(r);
+    }
+    return bar;
+  }
+
+  function commentBox(item) {
+    const list = comments[item.key] || [];
+    const d = el('details', null, 'cm');
+    d.appendChild(el('summary', 'Comments (' + list.length + ')'));
+    list.forEach(c => {
+      const row = el('div', null, 'c');
+      row.append(el('b', (c.name || 'Neighbor') + ': '), document.createTextNode(c.text));
+      d.appendChild(row);
+    });
+    const f = document.createElement('form');
+    const n = el('input'); n.placeholder = 'Your name (optional)'; n.maxLength = 40;
+    const t = el('textarea'); t.placeholder = 'Add a comment'; t.maxLength = 300; t.required = true; t.style.minHeight = '50px';
+    const b = el('button', 'Post comment', 'go');
+    const m = el('div', null, 'msg');
+    f.append(n, t, b, m);
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        await db.collection('comments').add({
+          postId: item.key, name: n.value.trim(), text: t.value.trim(),
+          status: 'pending', created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        f.reset(); m.textContent = 'Thanks! Your comment will show once it is reviewed.';
+      } catch (err) { m.textContent = 'Could not post comment right now.'; }
+    };
+    d.appendChild(f);
+    return d;
+  }
+
+  function render() {
+    const list = document.getElementById('list');
+    const shown = [...spotlights, ...STATIC, ...posts].filter(p => ALLOWED.has(p.category) && matchesBoardQuery(p) && (current === 'all' || p.category === current)
+      && (countyFilter === 'all' || p.category === 'spotlight' || p.county === countyFilter || p.county === 'Region-wide'));
+    list.innerHTML = '';
+    if (!shown.length) { list.appendChild(el('div', 'Nothing pinned here yet.', 'empty')); return; }
+    shown.forEach((p, i) => {
+      const note = el('div', null, 'note' + (p.category === 'spotlight' ? ' spot' : ''));
+      note.id = p.key;
+      note.appendChild(el('span', LABELS[p.category] || p.category, 'badge'));
+      if (p.county) { const cb = el('span', p.county === 'Gateway' ? 'Gateway (Suffolk area)' : p.county, 'badge'); cb.style.marginLeft = '6px'; note.appendChild(cb); }
+      note.appendChild(el('h3', p.title));
+      note.appendChild(el('p', p.description));
+      if (p.contact) note.appendChild(el('div', 'Contact: ' + p.contact, 'meta'));
+      if (p.url) {
+        const a = el('a', 'More info →', 'more');
+        a.href = p.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        note.appendChild(a);
+      }
+      note.appendChild(shareBar(p));
+      if (commentsEnabled && p.commentable && !p.comments_off) note.appendChild(commentBox(p));
+      list.appendChild(note);
+    });
+    focusHash();
+  }
+
+  function focusHash() {
+    const id = location.hash.slice(1);
+    const n = id && document.getElementById(id);
+    if (n && !n.dataset.seen) { n.dataset.seen = '1'; n.classList.add('flash'); n.scrollIntoView({ block: 'center' }); setTimeout(() => n.classList.remove('flash'), 3000); }
+  }
+
+  async function load() {
+    try {
+      const s = await db.collection('settings').doc('site').get();
+      if (s.exists && s.data().comments_enabled === false) commentsEnabled = false;
+    } catch (e) {}
+    try {
+      const sp = await db.collection('spotlights').get();
+      spotlights = sp.docs.map(d => ({ ...d.data(), key: 'sp-' + d.id, category: 'spotlight', contact: '', commentable: true }));
+      spotlights.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+      spotlights.forEach(x => { x.description = x.body; });
+    } catch (e) {}
+    try {
+      const ps = await db.collection('posts').where('status', '==', 'approved').get();
+      posts = ps.docs.map(d => ({ ...d.data(), key: 'p-' + d.id, commentable: true }));
+      posts = posts.filter(p => !p.created_at || (Date.now() / 1000 - p.created_at.seconds) < MAX_AGE_DAYS * 86400);
+      posts.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+    } catch (e) {}
+    try {
+      const cs = await db.collection('comments').where('status', '==', 'approved').get();
+      comments = {};
+      cs.docs.map(d => d.data()).sort((a, b) => (a.created_at?.seconds || 0) - (b.created_at?.seconds || 0))
+        .forEach(c => { (comments[c.postId] = comments[c.postId] || []).push(c); });
+    } catch (e) {}
+    render();
+  }
+
+  // ---- Auto-approve guardrails. MUST match firestore.rules (events/kids/requests only). ----
+  const AUTO_CATS = ['events', 'kids', 'requests'];
+  const AUTO_CAP = 20; // auto-approved posts per UTC day; past that, posts wait for review
+  const RXS = { lower: ".*[a-z].*", repeat: ".*[!?]{3}.*", links: ".*(https?:|www[.]|[.](com|net|org|us|co|io|ly|xyz|info|biz|me|app|gov|edu)([^a-z]|$)|bit[.]ly|tinyurl|linktr).*", bad1: ".*(^|[^a-z])(cashapp|cash app|venmo|zelle|paypal|western union|moneygram|gift card|giftcard|bitcoin|crypto|forex|wire transfer|send money|get rich|telegram|whatsapp|snapchat|onlyfans|escort|porn|xxx|nude|sex|sexual|cocaine|heroin|meth|fentanyl|weed|marijuana|asshole)([^a-z]|$).*", bad2: ".*(^|[^a-z])(fuck|shit|bitch|cunt|whore|slut|nigg|fagg|retard|bastard).*", email: ".*[a-z0-9._%+-]+@[a-z0-9-]+([.][a-z0-9-]+)*[.][a-z]{2,}.*", phone: ".*[(]?[0-9]{3}[)]?[-. ]?[0-9]{3}[-. ]?[0-9]{4}.*", url: ".*(https?:|www[.]).*" };
+  const rxFull = (k) => new RegExp('^(?:' + RXS[k] + ')$', 's');
+  function checkPost(p) {
+    const body = (p.title + ' ' + p.description).toLowerCase();
+    const all = (p.title + ' ' + p.description + ' ' + p.contact).toLowerCase();
+    const c = p.contact.toLowerCase();
+    if (p.title.length < 5 || p.description.length < 20) return 'Please add a clear title (5+ characters) and a little more detail (20+ characters).';
+    if (!rxFull('lower').test(p.title)) return 'Please do not write the title in ALL CAPS.';
+    if (rxFull('repeat').test(p.title + ' ' + p.description)) return 'Please skip repeated !!! or ???.';
+    if (rxFull('links').test(body)) return 'Web links are not allowed in posts. Put a phone number or email in the contact box instead.';
+    if (rxFull('bad1').test(all) || rxFull('bad2').test(all)) return 'That wording is not allowed on this board. Please reword your post.';
+    if (!((rxFull('email').test(c) || rxFull('phone').test(c)) && !rxFull('url').test(c))) return 'Please include a phone number or email so neighbors can reach you (no web links).';
+    return '';
+  }
+  // Publishes straight away if there is room under today's cap. Returns false to fall back to review.
+  async function tryAutoPublish(post) {
+    const now = new Date();
+    const key = now.getUTCFullYear() + '-' + (now.getUTCMonth() + 1) + '-' + now.getUTCDate();
+    const ref = db.collection('autoCounts').doc(key);
+    for (let i = 0; i < 2; i++) {
+      try {
+        const snap = await ref.get();
+        const n = snap.exists ? (snap.data().n || 0) : 0;
+        if (n >= AUTO_CAP) return false;
+        const batch = db.batch();
+        batch.set(db.collection('posts').doc(), { ...post, status: 'approved', created_at: firebase.firestore.FieldValue.serverTimestamp() });
+        batch.set(ref, { n: n + 1 });
+        await batch.commit();
+        return true;
+      } catch (err) { /* race or rules refusal: retry once, then hold for review */ }
+    }
+    return false;
+  }
+
+  document.getElementById('postForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('formMsg');
+    if (document.getElementById('website').value) { msg.textContent = 'Thanks! Your post is on its way.'; return; } // spam trap
+    try {
+      if (Date.now() - Number(localStorage.getItem('ibxLastPost') || 0) < 60000) {
+        msg.style.color = 'var(--bad)'; msg.textContent = 'Please wait a minute before posting again.'; return;
+      }
+    } catch (err) {}
+    const post = {
+      county: document.getElementById('county').value,
+      category: document.getElementById('category').value,
+      title: document.getElementById('title').value.trim(),
+      description: document.getElementById('description').value.trim(),
+      contact: document.getElementById('contact').value.trim()
+    };
+    try {
+      let live = false;
+      if (AUTO_CATS.includes(post.category)) {
+        const why = checkPost(post);
+        if (why) { msg.style.color = 'var(--bad)'; msg.textContent = why; return; }
+        live = await tryAutoPublish(post);
+      }
+      if (!live) await db.collection('posts').add({ ...post, status: 'pending', created_at: firebase.firestore.FieldValue.serverTimestamp() });
+      e.target.reset();
+      msg.style.color = 'var(--good)';
+      msg.textContent = live ? 'Thanks! Your post is live now.' : 'Thanks! Your post will appear once it is reviewed.';
+      try { localStorage.setItem('ibxLastPost', String(Date.now())); } catch (err) {}
+      if (live) load();
+    } catch (err) {
+      msg.style.color = 'var(--bad)';
+      msg.textContent = 'Could not submit. Please try again.';
+    }
+  });
+
+  renderTabs();
+  render();
+  load();
+
+  /* ---- Today panel: board ticker, weather, announcements ---- */
+  (function () {
+    const $id = (x) => document.getElementById(x);
+    const dEl = $id('ledgerDate');
+    if (dEl) dEl.textContent = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    let tickSig = '', noteSig = '', noteTimer = null, noteIdx = 0;
+
+    function buildTicker() {
+      const live = posts.filter(p => ALLOWED.has(p.category)).slice(0, 6);
+      const fixed = STATIC.filter(s => s.category === 'events' && ALLOWED.has(s.category)).slice(0, 3);
+      const items = [...live, ...fixed].map(p => ({ tag: LABELS[p.category] || p.category, text: p.title }));
+      const sig = JSON.stringify(items);
+      if (sig === tickSig) return;
+      tickSig = sig;
+      const track = $id('tickTrack');
+      track.textContent = '';
+      if (!items.length) { track.style.animation = 'none'; track.textContent = 'Nothing new on the board yet.'; return; }
+      track.style.animation = '';
+      const group = () => {
+        const g = document.createElement('span'); g.className = 'tick-group';
+        items.forEach(it => {
+          const a = document.createElement('a'); a.href = '#board'; a.className = 'ti';
+          const b = document.createElement('b'); b.textContent = it.tag;
+          a.append(b, document.createTextNode(it.text));
+          g.appendChild(a);
+        });
+        return g;
+      };
+      track.append(group(), group());
+      const chars = items.reduce((n, it) => n + it.tag.length + it.text.length + 2, 0);
+      track.style.setProperty('--dur', Math.max(25, chars * 0.22) + 's');
+    }
+
+    function buildNotes() {
+      const list = spotlights.map(s => ({ t: s.title || '', b: s.body || s.description || '' })).filter(x => x.t);
+      const sig = JSON.stringify(list);
+      if (sig === noteSig) return;
+      noteSig = sig; noteIdx = 0;
+      clearInterval(noteTimer);
+      const el = $id('noteVal');
+      if (!list.length) { el.textContent = 'No announcements right now.'; return; }
+      const show = () => { const n = list[noteIdx % list.length]; el.textContent = n.t + (n.b ? ': ' + n.b : ''); noteIdx++; };
+      show();
+      if (list.length > 1) noteTimer = setInterval(show, 7000);
+    }
+
+    async function loadWeather() {
+      const el = $id('wxVal');
+      try {
+        const r = await fetch('https://api.weather.gov/gridpoints/AKQ/84,15/forecast');
+        if (!r.ok) throw new Error('forecast ' + r.status);
+        const p = (await r.json()).properties.periods;
+        const fmt = (x) => x.name + ': ' + x.temperature + '\u00B0' + x.temperatureUnit + ', ' + x.shortForecast;
+        el.textContent = fmt(p[0]) + '. ' + fmt(p[1]) + '.';
+      } catch (e) { el.textContent = 'The forecast is unavailable right now.'; return; }
+      try {
+        const a = await fetch('https://api.weather.gov/alerts/active?point=36.0577,-76.6061');
+        const f = (await a.json()).features || [];
+        if (f.length) {
+          const s = document.createElement('strong'); s.className = 'alert';
+          s.textContent = 'Alert: ' + f[0].properties.event + '. ';
+          el.prepend(s);
+        }
+      } catch (e) {}
+    }
+
+    const baseRender = render;
+    render = function () { baseRender(); buildTicker(); buildNotes(); };
+    buildTicker(); buildNotes(); loadWeather();
+  })();
+  /* ---- Tile search: type a need, get pointed to the right place ---- */
+  (function () {
+    const SITES = { board: 'https://ibxconnect.web.app/', help: 'https://ibxhelp.web.app/', shop: 'https://ibxshop.web.app/' };
+    const SCOPE_CATS = { board: ['resources', 'events', 'kids', 'requests', 'spotlight'], help: ['jobs', 'services'] };
+    const HERE = CONFIG.here;
+    let inventory = [];
+    try {
+      db.collection('inventoryItems').where('sold', '==', false).get().then(s => {
+        inventory = s.docs.map(d => {
+          const x = d.data();
+          return { inv: true, title: x.brand || 'Item', description: [x.category, x.size && ('Size ' + x.size)].filter(Boolean).join(', ') };
+        });
+      }).catch(() => {});
+    } catch (e) {}
+
+    function pool(scope) {
+      if (scope === 'shop') return inventory;
+      const cats = SCOPE_CATS[scope] || [];
+      return [...spotlights, ...STATIC, ...posts].filter(p => cats.includes(p.category));
+    }
+    function find(scope, q) {
+      const g = qGroups(q);
+      if (!g.length) return [];
+      const need = qNeed(g.length);
+      return pool(scope).map(p => ({ p, s: qScore(g, hayOf(p)) })).filter(x => x.s >= need).sort((a, b) => b.s - a.s).map(x => x.p);
+    }
+    function go(scope, q) {
+      if (scope === HERE) {
+        boardQuery = q;
+        const bs = document.getElementById('boardSearch'); if (bs) bs.value = q;
+        current = 'all'; renderTabs(); render();
+        document.getElementById('board').scrollIntoView({ behavior: 'smooth' });
+      } else {
+        location.href = SITES[scope] + (q ? '?q=' + encodeURIComponent(q) : '');
+      }
+    }
+    document.querySelectorAll('.tile[data-scope]').forEach(tile => {
+      const scope = tile.dataset.scope;
+      const form = tile.querySelector('form'), input = form.querySelector('input'), box = form.querySelector('.tresults');
+      const close = () => { box.hidden = true; box.textContent = ''; };
+      const row = (child) => { const l = document.createElement('li'); l.appendChild(child); box.appendChild(l); };
+      function show() {
+        const q = input.value.trim();
+        box.textContent = '';
+        if (!q) { box.hidden = true; return; }
+        const hits = find(scope, q);
+        hits.slice(0, 4).forEach(p => {
+          const a = document.createElement('a'); a.href = '#';
+          const tag = document.createElement('span'); tag.className = 'rt';
+          tag.textContent = p.inv ? 'In the shop' : (LABELS[p.category] || p.category) + (p.county && p.county !== 'Region-wide' ? ' / ' + p.county : '');
+          a.append(tag, document.createTextNode(p.title));
+          if (p.url && !p.inv) { a.href = p.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+          else a.onclick = (e) => { e.preventDefault(); go(scope, p.title); close(); };
+          row(a);
+        });
+        const all = document.createElement('a'); all.href = '#'; all.className = 'all';
+        all.textContent = hits.length ? 'See all ' + hits.length + ' match' + (hits.length === 1 ? '' : 'es') + ' \u2192' : 'No exact matches. Search everywhere \u2192';
+        all.onclick = (e) => { e.preventDefault(); go(scope, q); close(); };
+        row(all);
+        box.hidden = false;
+      }
+      input.addEventListener('input', show);
+      form.addEventListener('submit', (e) => { e.preventDefault(); const q = input.value.trim(); if (q) { go(scope, q); close(); } });
+      input.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    });
+    const closeOutside = (e) => document.querySelectorAll('.tresults').forEach(b => { if (!b.parentElement.contains(e.target)) { b.hidden = true; } });
+    ['pointerdown', 'click', 'focusin'].forEach(ev => document.addEventListener(ev, closeOutside));
+  })();
+
+  /* ---- board search box, and ?q= links coming from the other sites ---- */
+  (function () {
+    const bs = document.getElementById('boardSearch');
+    if (bs) bs.addEventListener('input', (e) => { boardQuery = e.target.value.trim(); render(); });
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q');
+    if (q || params.get('tab')) setTimeout(() => document.getElementById('board').scrollIntoView(), 400);
+    if (!q) return;
+    boardQuery = q.slice(0, 60);
+    if (bs) bs.value = boardQuery;
+    current = 'all'; renderTabs(); render();
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+    "projects":  {
+                     "default":  "thruket-site1"
+                 },
+    "targets":  {
+                    "thruket-site1":  {
+                                          "hosting":  {
+                                                          "intake":  [
+                                                                         "ibx-intake"
+                                                                     ],
+                                                          "connect":  [
+                                                                          "ibxconnect"
+                                                                      ],
+                                                          "shop":  [
+                                                                       "ibxshop"
+                                                                   ],
+                                                          "help":  [
+                                                                       "ibxhelp"
+                                                                   ]
+                                                      }
+                                      }
+                }
+}

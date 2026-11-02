@@ -1,0 +1,47 @@
+{
+    "hosting": [
+        {
+            "target": "shop",
+            "public": "shop",
+            "ignore": [
+                "firebase.json",
+                "netlify.toml",
+                "**/.*",
+                "**/node_modules/**"
+            ]
+        },
+        {
+            "target": "intake",
+            "public": "intake",
+            "ignore": [
+                "firebase.json",
+                "netlify.toml",
+                "**/.*",
+                "**/node_modules/**"
+            ]
+        },
+        {
+            "target": "connect",
+            "public": "connect",
+            "ignore": [
+                "firebase.json",
+                "netlify.toml",
+                "**/.*",
+                "**/node_modules/**"
+            ]
+        },
+        {
+            "target": "help",
+            "public": "help",
+            "ignore": [
+                "firebase.json",
+                "netlify.toml",
+                "**/.*",
+                "**/node_modules/**"
+            ]
+        }
+    ],
+    "firestore": {
+        "rules": "firestore.rules"
+    }
+}

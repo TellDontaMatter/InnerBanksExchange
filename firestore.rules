@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email == 'philctellsit@gmail.com';
+    }
+
+    // Site-wide comments switch (settings/site.comments_enabled)
+    function commentsOn() {
+      return !exists(/databases/$(database)/documents/settings/site)
+          || get(/databases/$(database)/documents/settings/site).data.get('comments_enabled', true) != false;
+    }
+
+    // ---------------------------------------------------------------
+    // Auto-approve guardrails (posts). A post may be created as
+    // 'approved' ONLY if every check below passes AND it is within the
+    // daily cap. Anything else can only be created as 'pending'.
+    // Keep the lists in sync with the checks in connect/index.html.
+    // (?s) lets . match newlines. No backslashes on purpose.
+    // ---------------------------------------------------------------
+    function dayKey() {
+      return string(request.time.year()) + '-' + string(request.time.month()) + '-' + string(request.time.day());
+    }
+    function capDoc() {
+      return /databases/$(database)/documents/autoCounts/$(dayKey());
+    }
+    // at most 20 auto-approved posts per UTC day; the counter write must be in the same batch
+    function capOk() {
+      return getAfter(capDoc()).data.n <= 20
+          && getAfter(capDoc()).data.n == (exists(capDoc()) ? get(capDoc()).data.n : 0) + 1;
+    }
+    function autoCat(d) {
+      return d.category in ['events', 'kids', 'requests'];
+    }
+    function cleanText(d) {
+      let t = (d.title + ' ' + d.description + ' ' + d.contact).lower();
+      let body = (d.title + ' ' + d.description).lower();
+      return d.title.size() >= 5
+          && d.description.size() >= 20
+          && d.title.matches('(?s).*[a-z].*')
+          && !(d.title + ' ' + d.description).matches('(?s).*[!?]{3}.*')
+          && !body.matches('(?s).*(https?:|www[.]|[.](com|net|org|us|co|io|ly|xyz|info|biz|me|app|gov|edu)([^a-z]|$)|bit[.]ly|tinyurl|linktr).*')
+          && !t.matches('(?s).*(^|[^a-z])(cashapp|cash app|venmo|zelle|paypal|western union|moneygram|gift card|giftcard|bitcoin|crypto|forex|wire transfer|send money|get rich|telegram|whatsapp|snapchat|onlyfans|escort|porn|xxx|nude|sex|sexual|cocaine|heroin|meth|fentanyl|weed|marijuana|asshole)([^a-z]|$).*')
+          && !t.matches('(?s).*(^|[^a-z])(fuck|shit|bitch|cunt|whore|slut|nigg|fagg|retard|bastard).*');
+    }
+    function goodContact(d) {
+      let c = d.contact.lower();
+      return (c.matches('(?s).*[a-z0-9._%+-]+@[a-z0-9-]+([.][a-z0-9-]+)*[.][a-z]{2,}.*')
+              || c.matches('(?s).*[(]?[0-9]{3}[)]?[-. ]?[0-9]{3}[-. ]?[0-9]{4}.*'))
+          && !c.matches('(?s).*(https?:|www[.]).*');
+    }
+
+    match /inventoryItems/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Admin-only highlighted posts
+    match /spotlights/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /posts/{postId} {
+      // Public sees approved listings only; admin sees everything
+      allow read: if resource.data.status == 'approved' || isAdmin();
+      // Anyone can submit a listing. It starts as pending, except events/kids/requests
+      // posts that pass every guardrail and fit under the daily cap, which may start approved.
+      allow create: if request.resource.data.keys().hasOnly(['category','title','description','contact','status','created_at','county'])
+                    && request.resource.data.category in ['jobs','events','kids','services','requests']
+                    && (!('county' in request.resource.data)
+                        || request.resource.data.county in ['Bertie','Beaufort','Camden','Chowan','Gates','Hertford','Martin','Pasquotank','Perquimans','Pitt','Tyrrell','Washington','Gateway','Region-wide'])
+                    && request.resource.data.title is string
+                    && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 100
+                    && request.resource.data.description is string
+                    && request.resource.data.description.size() > 0 && request.resource.data.description.size() <= 1000
+                    && request.resource.data.contact is string
+                    && request.resource.data.contact.size() > 0 && request.resource.data.contact.size() <= 150
+                    && request.resource.data.created_at == request.time
+                    && (request.resource.data.status == 'pending'
+                        || (request.resource.data.status == 'approved'
+                            && autoCat(request.resource.data)
+                            && cleanText(request.resource.data)
+                            && goodContact(request.resource.data)
+                            && capOk()));
+      // Only admin approves, edits (including comments_off), or deletes
+      allow update, delete: if isAdmin();
+    }
+
+    // Counter for the daily auto-approve cap (one doc per UTC day, field n)
+    match /autoCounts/{day} {
+      allow read: if true;
+      allow create: if day == dayKey()
+                    && request.resource.data.keys().hasOnly(['n'])
+                    && request.resource.data.n == 1;
+      allow update: if day == dayKey()
+                    && request.resource.data.keys().hasOnly(['n'])
+                    && request.resource.data.n == resource.data.n + 1
+                    && request.resource.data.n <= 20;
+    }
+
+    // Neighbors can report a post; only admin can read reports
+    match /reports/{reportId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if request.resource.data.keys().hasOnly(['postId','reason','created_at'])
+                    && request.resource.data.postId is string
+                    && request.resource.data.postId.size() > 0 && request.resource.data.postId.size() <= 60
+                    && request.resource.data.reason is string
+                    && request.resource.data.reason.size() > 0 && request.resource.data.reason.size() <= 200
+                    && request.resource.data.created_at == request.time;
+    }
+
+    match /comments/{commentId} {
+      allow read: if resource.data.status == 'approved' || isAdmin();
+      allow create: if commentsOn()
+                    && request.resource.data.keys().hasOnly(['postId','name','text','status','created_at'])
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.postId is string
+                    && request.resource.data.postId.size() > 0 && request.resource.data.postId.size() <= 60
+                    && request.resource.data.name is string && request.resource.data.name.size() <= 40
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 300
+                    && request.resource.data.created_at == request.time;
+      allow update, delete: if isAdmin();
+    }
+
+    // Private project list for the ibx-intake dashboard
+    match /dashboard/{doc} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

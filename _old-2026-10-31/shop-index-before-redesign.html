@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inner Banks Exchange — Shop &amp; Community Board</title>
+  <meta name="description" content="Flat-priced shop and neighborhood bulletin board for North Carolina's Inner Banks: jobs, events, youth programs, services and local resources.">
+  <meta property="og:title" content="Inner Banks Exchange">
+  <meta property="og:description" content="Flat-priced shop and neighborhood bulletin board for North Carolina's Inner Banks.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0b0d13">
+  <!-- Firebase App & Firestore Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <style>
+    :root {
+      --bg: #0b0d13;
+      --card: #151822;
+      --card-hover: #1c2130;
+      --border: #232838;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --danger: #ef4444;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --tag: #2a3147;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 16px 60px;
+    }
+    .wrapper {
+      width: 100%;
+      max-width: 1100px;
+    }
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+    }
+    @media (min-width: 640px) {
+      header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+    .brand-group h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .brand-group p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    .search-box {
+      width: 100%;
+      max-width: 360px;
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-box input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      width: 100%;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: #3b4258;
+    }
+    .img-wrap {
+      width: 100%;
+      aspect-ratio: 1;
+      background: #08090d;
+      position: relative;
+      overflow: hidden;
+    }
+    .img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+    .card:hover .img-wrap img {
+      transform: scale(1.03);
+    }
+    .price-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(6px);
+      color: var(--accent);
+      font-size: 15px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .content {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .tags {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .tag {
+      background: var(--tag);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .card-category {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .actions {
+      margin-top: auto;
+      display: flex;
+      gap: 10px;
+    }
+    a.buy-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      background: var(--accent);
+      color: #000;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-radius: 10px;
+      transition: background 0.15s;
+    }
+    a.buy-btn:hover {
+      background: var(--accent-hover);
+    }
+    button.mark-sold-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    button.mark-sold-btn:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.1);
+    }
+    .loading, .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    footer a {
+      color: var(--muted);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper">
+    <header>
+      <div class="brand-group">
+        <h1>Inner Banks Exchange</h1>
+        <p>The Inner Banks' shop and community board.</p>
+      </div>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search brand, style, or size...">
+      </div>
+    </header>
+
+    <section style="margin:-8px 0 32px">
+      <p style="font-size:17px;line-height:1.5;max-width:680px;margin-bottom:18px">A shop with flat, fair prices and a neighborhood bulletin board for North Carolina's Inner Banks, so you can find things, work, events and help close to home.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <a href="#shop" style="display:block;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;color:var(--text);text-decoration:none"><strong style="font-size:18px">&#128717; Shop</strong><br><span style="color:var(--muted);font-size:14px">Browse what's available now</span></a>
+        <a href="/community.html" style="display:block;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;color:var(--text);text-decoration:none"><strong style="font-size:18px">&#128204; Community Board</strong><br><span style="color:var(--muted);font-size:14px">Jobs, events, youth programs, services</span></a>
+        <a href="/community.html?tab=resources" style="display:block;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;color:var(--text);text-decoration:none"><strong style="font-size:18px">&#129309; Find Help</strong><br><span style="color:var(--muted);font-size:14px">Food, emergency aid, benefits, education</span></a>
+      </div>
+    </section>
+
+    <div id="shop"></div>
+    <div class="grid" id="inventoryGrid" style="scroll-margin-top:16px">
+      <div class="loading" id="statusMessage">Connecting to live inventory...</div>
+    </div>
+
+    <footer>
+      <p>Inner Banks Exchange Inventory · Powered by Firebase & Stripe</p>
+    </footer>
+  </div>
+
+  <script>
+    // ── FIREBASE CONFIGURATION (thruket-site1) ──
+    const firebaseConfig = {
+      projectId: "thruket-site1",
+      authDomain: "thruket-site1.firebaseapp.com",
+      storageBucket: "thruket-site1.appspot.com"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+
+    let allItems = [];
+
+    async function loadInventory() {
+      const grid = document.getElementById('inventoryGrid');
+      const statusMsg = document.getElementById('statusMessage');
+
+      try {
+        // Query items that are NOT sold
+        const snapshot = await db.collection('inventoryItems')
+          .where('sold', '==', false)
+          .get();
+
+        if (snapshot.empty) {
+          grid.innerHTML = '<div class="empty">New items are added regularly. Check back soon, or browse the <a href="/community.html" style="color:var(--accent)">Community Board</a> for jobs, events and local help.</div>';
+          return;
+        }
+
+        allItems = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          allItems.push({
+            id: doc.id,
+            brand: data.brand || 'Vintage',
+            category: data.category || 'Apparel',
+            size: data.size || 'One Size',
+            price: data.price ? `$${Number(data.price).toFixed(2)}` : '$0.00',
+            photo_url: data.photo_url || 'data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22400%22%3E%3Crect%20width%3D%22400%22%20height%3D%22400%22%20fill%3D%22%23151822%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%22210%22%20fill%3D%22%239ca3af%22%20font-family%3D%22sans-serif%22%20font-size%3D%2222%22%20text-anchor%3D%22middle%22%3ENo%20photo%20yet%3C%2Ftext%3E%3C%2Fsvg%3E',
+            payment_link: data.payment_link || '#'
+          });
+        });
+
+        renderItems(allItems);
+      } catch (err) {
+        console.error("Error fetching inventory:", err);
+        grid.innerHTML = `<div class="empty" style="color:#ef4444;">Failed to load items: ${err.message}</div>`;
+      }
+    }
+
+    function renderItems(items) {
+      const grid = document.getElementById('inventoryGrid');
+      grid.innerHTML = '';
+
+      if (items.length === 0) {
+        grid.innerHTML = '<div class="empty">No items match your search.</div>';
+        return;
+      }
+
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.id = `item-${item.id}`;
+        card.innerHTML = `
+          <div class="img-wrap">
+            <img src="${item.photo_url}" alt="${item.brand} ${item.category}" onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22400%22%3E%3Crect%20width%3D%22400%22%20height%3D%22400%22%20fill%3D%22%23151822%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%22210%22%20fill%3D%22%239ca3af%22%20font-family%3D%22sans-serif%22%20font-size%3D%2222%22%20text-anchor%3D%22middle%22%3ENo%20photo%20yet%3C%2Ftext%3E%3C%2Fsvg%3E'">
+            <div class="price-badge">${item.price}</div>
+          </div>
+          <div class="content">
+            <div class="tags">
+              <span class="tag">Size ${item.size}</span>
+            </div>
+            <div class="card-title">${item.brand}</div>
+            <div class="card-category">${item.category}</div>
+            <div class="actions">
+              <a href="${item.payment_link}" target="_blank" rel="noopener noreferrer" class="buy-btn">Buy Now</a>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // ── LIVE SEARCH / FILTER ──
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        renderItems(allItems);
+        return;
+      }
+      const filtered = allItems.filter(item => 
+        item.brand.toLowerCase().includes(q) || 
+        item.category.toLowerCase().includes(q) || 
+        item.size.toLowerCase().includes(q)
+      );
+      renderItems(filtered);
+    });
+
+    // Initial Load
+    loadInventory();
+  </script>
+</body>
+</html>
+

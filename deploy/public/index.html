@@ -1,0 +1,604 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>IBX Shop</title>
+<meta name="description" content="Thrift-flipped goods, vintage decor, outerwear and workshop inventory. Cleaned, graded, and tagged with every flaw written down. Inner Banks Exchange.">
+<meta name="theme-color" content="#ecefe9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b171b" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<style>
+/* IBX SHOP BRAND SYSTEM
+   Concept: a dock ledger. Every item is a consignment tag with a lot number,
+   a grade, and its flaws in writing. Salt-paper ground, estuary ink, one
+   channel-marker red-orange for the single action on each tag. */
+:root {
+  --paper: #ecefe9;
+  --paper-2: #e1e6df;
+  --card: #f6f7f2;
+  --manila: #e8d8ad;
+  --manila-ink: #4a3b17;
+  --ink: #10222a;
+  --ink-2: #51656b;
+  --line: #c3ccc4;
+  --sea: #1d5c60;
+  --marker: #d8461a;
+  --marker-ink: #ffffff;
+  --flaw-bg: #f3e3d9;
+  --flaw-ink: #7a2e12;
+  --ok: #2f7a4f;
+
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+
+  --gutter: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b171b; --paper-2: #10222a; --card: #12262d; --manila: #cdbb8a; --manila-ink: #2c2410;
+    --ink: #e7eee9; --ink-2: #93a8ac; --line: #213840; --sea: #5fb3b3; --marker: #ff6a3d;
+    --marker-ink: #1a0a04; --flaw-bg: #2d1c15; --flaw-ink: #f2a98a; --ok: #6fcf97;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b171b; --paper-2: #10222a; --card: #12262d; --manila: #cdbb8a; --manila-ink: #2c2410;
+  --ink: #e7eee9; --ink-2: #93a8ac; --line: #213840; --sea: #5fb3b3; --marker: #ff6a3d;
+  --marker-ink: #1a0a04; --flaw-bg: #2d1c15; --flaw-ink: #f2a98a; --ok: #6fcf97;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--marker); outline-offset: 3px; border-radius: 2px; }
+.wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter-r); }
+.mono { font-family: var(--f-mono); }
+
+/* ---------- Network bar ---------- */
+.network {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--ink); color: var(--paper);
+  height: 38px; overflow: hidden; display: flex; align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+.network-track { display: inline-flex; white-space: nowrap; animation: marquee 48s linear infinite; }
+.network:hover .network-track, .network:focus-within .network-track { animation-play-state: paused; }
+.network a {
+  display: inline-flex; align-items: center; gap: 10px; margin-right: 44px;
+  font: 500 12px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase;
+  text-decoration: none; color: color-mix(in srgb, var(--paper) 78%, transparent);
+  transition: color .2s;
+}
+.network a:hover { color: var(--marker); }
+.network a i { width: 7px; height: 7px; background: var(--marker); display: block; transform: rotate(45deg); }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* ---------- Masthead ---------- */
+.masthead { border-bottom: 1px solid var(--line); }
+.masthead .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 18px; padding-bottom: 18px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+.brand-mark { width: 44px; height: 44px; flex: none; }
+.brand-word { font-family: var(--f-display); font-weight: 900; font-size: 34px; line-height: .85; letter-spacing: .01em; text-transform: uppercase; }
+.brand-word small { display: block; font: 500 10.5px/1 var(--f-mono); letter-spacing: .22em; color: var(--ink-2); margin-top: 6px; }
+.nav { display: flex; gap: 22px; align-items: center; font: 500 13px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; }
+.nav a { text-decoration: none; color: var(--ink-2); padding: 6px 0; border-bottom: 2px solid transparent; }
+.nav a:hover { color: var(--ink); border-color: var(--marker); }
+
+/* ---------- Hero ---------- */
+.hero { position: relative; overflow: hidden; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 56px; align-items: end; padding-top: 72px; padding-bottom: 88px; }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--sea); display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.eyebrow::before { content: ""; width: 34px; height: 2px; background: var(--marker); }
+.hero h1 {
+  font-family: var(--f-display); font-weight: 900; text-transform: uppercase;
+  font-size: clamp(56px, 10.5vw, 148px); line-height: .84; letter-spacing: -.005em; text-wrap: balance;
+}
+.hero h1 em { font-style: normal; color: var(--marker); }
+.hero-sub { max-width: 52ch; margin-top: 28px; font-size: 18px; color: var(--ink-2); }
+.hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; border: 0;
+  font: 600 14px/1 var(--f-body); letter-spacing: .02em; padding: 15px 22px; border-radius: 3px;
+  background: var(--marker); color: var(--marker-ink); transition: transform .15s, filter .15s;
+}
+.btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.btn.ghost:hover { background: var(--ink); color: var(--paper); }
+
+.ledger { background: var(--card); border: 1.5px solid var(--ink); border-radius: 4px; padding: 0; position: relative; }
+.ledger-head { display: flex; justify-content: space-between; padding: 11px 16px; border-bottom: 1.5px solid var(--ink); font: 500 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; background: var(--manila); color: var(--manila-ink); border-radius: 2px 2px 0 0; }
+.ledger-body { padding: 8px 16px 16px; }
+.ledger-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 13px 0; border-bottom: 1px dashed var(--line); font: 500 13px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+.ledger-row b { font: 900 38px/1 var(--f-display); color: var(--ink); letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.ledger-row:last-of-type { border-bottom: 0; }
+.gauge { height: 54px; margin: 6px -16px -16px; position: relative; overflow: hidden; border-top: 1.5px solid var(--ink); border-radius: 0 0 2px 2px; background: var(--paper-2); }
+.gauge svg { position: absolute; left: 0; bottom: 0; width: 200%; height: 100%; animation: tide 9s linear infinite; }
+@keyframes tide { to { transform: translateX(-50%); } }
+.gauge span { position: absolute; right: 14px; top: 10px; font: 500 10.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); z-index: 1; }
+
+.tideline { display: block; width: 100%; height: 38px; color: var(--paper-2); }
+
+/* ---------- Shop ---------- */
+.shop { background: var(--paper-2); padding: 64px 0 96px; flex: 1; }
+.shop-top { display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+.shop-top h2 { font: 900 clamp(38px, 6vw, 64px)/.9 var(--f-display); text-transform: uppercase; }
+.shop-top p { color: var(--ink-2); max-width: 46ch; margin-top: 10px; }
+.count { font: 500 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1.5px solid var(--ink); }
+.chip {
+  font: 500 12.5px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  padding: 11px 15px; border-radius: 999px; background: transparent; color: var(--ink); border: 1.5px solid var(--line);
+  transition: background .15s, border-color .15s, color .15s;
+}
+.chip:hover { border-color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.chip sup { font-size: 10px; margin-left: 6px; opacity: .65; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 28px; }
+
+/* ---------- Tag card ---------- */
+.tag {
+  background: var(--card); border: 1.5px solid var(--ink); border-radius: 4px; overflow: hidden;
+  display: flex; flex-direction: column; min-width: 0; position: relative;
+  transition: transform .2s, box-shadow .2s;
+}
+.tag:hover { transform: translateY(-4px); box-shadow: 6px 6px 0 var(--ink); }
+.tag-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--manila); color: var(--manila-ink); padding: 10px 14px 10px 16px;
+  border-bottom: 1.5px solid var(--ink); font: 500 11.5px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase;
+}
+.tag-top .hole { width: 14px; height: 14px; border-radius: 50%; background: var(--paper-2); border: 1.5px solid var(--ink); flex: none; }
+.tag-img { aspect-ratio: 4 / 3; background: var(--paper-2); position: relative; overflow: hidden; border-bottom: 1.5px solid var(--ink); }
+.tag-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+.tag:hover .tag-img img { transform: scale(1.04); }
+.grade {
+  position: absolute; left: 12px; bottom: 12px; display: flex; align-items: stretch;
+  background: var(--card); border: 1.5px solid var(--ink); border-radius: 3px; overflow: hidden;
+}
+.grade b { font: 900 22px/1 var(--f-display); padding: 6px 10px 5px; background: var(--ink); color: var(--paper); }
+.grade span { font: 500 10.5px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 0 10px; display: flex; align-items: center; }
+.sold-stamp {
+  position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--paper) 62%, transparent); backdrop-filter: grayscale(1);
+}
+.sold-stamp span { font: 900 54px/1 var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--marker); border: 5px solid var(--marker); padding: 6px 20px 2px; transform: rotate(-9deg); }
+.tag-body { padding: 18px 18px 18px; display: flex; flex-direction: column; flex: 1; gap: 10px; }
+.tag-kind { font: 500 11.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sea); }
+.tag-title { font: 800 26px/1.02 var(--f-display); text-transform: uppercase; letter-spacing: .005em; text-wrap: balance; }
+.specs { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13.5px; }
+.specs dt { font: 500 11px/1.9 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.specs dd { color: var(--ink); }
+.flaws { font-size: 13px; background: var(--flaw-bg); color: var(--flaw-ink); border-radius: 3px; padding: 9px 11px; }
+.flaws b { font: 600 10.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; display: block; margin-bottom: 3px; }
+.tag-foot { margin-top: auto; padding-top: 14px; border-top: 1.5px dashed var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.price { font: 900 40px/1 var(--f-display); letter-spacing: .005em; font-variant-numeric: tabular-nums; }
+.price sup { font-size: 18px; vertical-align: top; position: relative; top: 4px; margin-right: 2px; }
+.price s { text-decoration-thickness: 3px; color: var(--ink-2); }
+.buy { padding: 13px 18px; }
+.buy.off { background: transparent; color: var(--ink-2); box-shadow: inset 0 0 0 1.5px var(--line); cursor: default; pointer-events: none; }
+.tag-desc { font-size: 14px; color: var(--ink-2); }
+.thumbs { display: flex; gap: 6px; padding: 8px 18px 0; flex-wrap: wrap; }
+.thumb { width: 52px; height: 52px; padding: 0; border: 1.5px solid var(--line); border-radius: 3px; overflow: hidden; background: var(--paper-2); cursor: pointer; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumb[aria-pressed="true"] { border-color: var(--ink); }
+.empty { grid-column: 1 / -1; padding: 48px; text-align: center; border: 1.5px dashed var(--ink-2); font: 500 14px var(--f-mono); color: var(--ink-2); }
+
+/* ---------- Standard ---------- */
+.standard { background: var(--ink); color: var(--paper); padding: 80px 0; }
+.standard .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 56px; }
+.standard h2 { font: 900 clamp(40px, 6vw, 72px)/.88 var(--f-display); text-transform: uppercase; text-wrap: balance; }
+.standard h2 em { font-style: normal; color: var(--marker); }
+.standard .lead { margin-top: 18px; color: color-mix(in srgb, var(--paper) 72%, transparent); max-width: 40ch; }
+.scale { list-style: none; display: grid; gap: 0; border-top: 1px solid color-mix(in srgb, var(--paper) 25%, transparent); }
+.scale li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 18px; padding: 22px 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 25%, transparent); align-items: start; }
+.scale .g { font: 900 64px/.8 var(--f-display); color: var(--marker); }
+.scale h3 { font: 800 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 6px; }
+.scale p { color: color-mix(in srgb, var(--paper) 72%, transparent); font-size: 15px; max-width: 56ch; }
+
+/* ---------- Footer ---------- */
+footer { border-top: 1.5px solid var(--ink); background: var(--paper); }
+.foot { display: grid; grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr)); gap: 40px; padding-top: 48px; padding-bottom: 36px; }
+.foot h4 { font: 500 11.5px/1 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 16px; }
+.foot ul { list-style: none; display: grid; gap: 10px; }
+.foot a { text-decoration: none; font-weight: 500; }
+.foot a:hover { color: var(--marker); }
+.foot p { color: var(--ink-2); font-size: 14px; max-width: 36ch; margin-top: 14px; }
+.legal { border-top: 1px solid var(--line); padding-top: 18px; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); font: 400 12px var(--f-mono); letter-spacing: .05em; color: var(--ink-2); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 48px; padding-bottom: 64px; }
+  .standard .wrap { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .foot { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .foot > div:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .nav { display: none; }
+  .brand-word { font-size: 30px; }
+  .hero-sub { font-size: 16px; }
+  .scale li { grid-template-columns: 56px minmax(0, 1fr); }
+  .scale .g { font-size: 50px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .network-track, .gauge svg { animation: none; }
+  .tag, .tag-img img, .btn { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Network bar: the rest of the Inner Banks Exchange family -->
+<header class="network" aria-label="Inner Banks Exchange network">
+  <div class="network-track" id="networkTrack">
+    <a href="https://seeyouryou.web.app" target="_blank" rel="noopener"><i></i>S.E.E. Engine: Decision Evaluation</a>
+    <a href="https://ibxchange.web.app" target="_blank" rel="noopener"><i></i>Inner Banks Exchange: Local Goods &amp; Gear</a>
+    <a href="#"><i></i>Household Knowledge Bank: Voice Search</a>
+    <a href="#"><i></i>Route | Philc: Military Relocation Routing</a>
+    <a href="https://seeyouryou.web.app" target="_blank" rel="noopener" aria-hidden="true" tabindex="-1"><i></i>S.E.E. Engine: Decision Evaluation</a>
+    <a href="https://ibxchange.web.app" target="_blank" rel="noopener" aria-hidden="true" tabindex="-1"><i></i>Inner Banks Exchange: Local Goods &amp; Gear</a>
+    <a href="#" aria-hidden="true" tabindex="-1"><i></i>Household Knowledge Bank: Voice Search</a>
+    <a href="#" aria-hidden="true" tabindex="-1"><i></i>Route | Philc: Military Relocation Routing</a>
+  </div>
+</header>
+
+<div class="masthead">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="IBX Shop home">
+      <!-- Mark: a shipping tag with a tide line cut through it -->
+      <svg class="brand-mark" viewBox="0 0 48 48" role="img" aria-hidden="true">
+        <path d="M8 4h32a4 4 0 0 1 4 4v32a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4z" fill="var(--ink)"/>
+        <circle cx="38" cy="10" r="2.6" fill="var(--paper)"/>
+        <path d="M4 30c4-3 8-3 12 0s8 3 12 0 8-3 12 0 4 1 4 1v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" fill="var(--marker)"/>
+        <path d="M11 11h4v13h-4zM18.5 11H22l3 5.2 3-5.2h3.5l-4.7 7 4.9 6.5h-3.7L25 19.1 21.5 24.5H18l4.9-6.5z" fill="var(--paper)"/>
+      </svg>
+      <span class="brand-word">IBX Shop<small>Inner Banks Exchange</small></span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="#lots">Lots</a>
+      <a href="#standard">The tag standard</a>
+      <a href="#network">Network</a>
+    </nav>
+  </div>
+</div>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="eyebrow">Direct local acquisition</div>
+        <h1>Found local.<br><em>Flipped</em> honest.</h1>
+        <p class="hero-sub">Thrift-flipped goods, vintage decor, outerwear and workshop inventory. Every lot is cleaned, checked, graded, and tagged with its flaws written down before it gets a price.</p>
+        <div class="hero-cta">
+          <a class="btn" href="#lots">Browse the lots</a>
+          <a class="btn ghost" href="#standard">How we grade</a>
+        </div>
+      </div>
+
+      <aside class="ledger" aria-label="Dock ledger">
+        <div class="ledger-head"><span>Dock ledger</span><span id="ledgerDate">Today</span></div>
+        <div class="ledger-body">
+          <div class="ledger-row"><span>Lots live</span><b id="statListed">0</b></div>
+          <div class="ledger-row"><span>Categories</span><b id="statOpen">0</b></div>
+          <div class="ledger-row"><span>Newest lot</span><b id="statSold">0</b></div>
+          <div class="gauge" aria-hidden="true">
+            <span>High tide: stocked</span>
+            <svg viewBox="0 0 400 54" preserveAspectRatio="none">
+              <path d="M0 26c25-14 50-14 75 0s50 14 75 0 50-14 75 0 50 14 75 0 50-14 75 0 50 14 75 0 50-14 75 0 50 14 75 0V54H0z" fill="var(--sea)" opacity=".28"/>
+              <path d="M0 34c25-12 50-12 75 0s50 12 75 0 50-12 75 0 50 12 75 0 50-12 75 0 50 12 75 0 50-12 75 0 50 12 75 0V54H0z" fill="var(--sea)"/>
+            </svg>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <svg class="tideline" viewBox="0 0 1200 38" preserveAspectRatio="none" aria-hidden="true"><path d="M0 38V20c100-24 200-24 300 0s200 24 300 0 200-24 300 0 200 24 300 0v18z" fill="currentColor"/></svg>
+  </section>
+
+  <section class="shop" id="lots" aria-labelledby="lotsHeading">
+    <div class="wrap">
+      <div class="shop-top">
+        <div>
+          <h2 id="lotsHeading">Current lots</h2>
+          <p>One of each, straight from the live inventory. When a lot sells, it comes down.</p>
+        </div>
+        <div class="count" id="count" aria-live="polite"></div>
+      </div>
+      <div class="filters" id="filters" role="group" aria-label="Filter lots by category"></div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </section>
+
+  <section class="standard" id="standard">
+    <div class="wrap">
+      <div>
+        <h2>The tag <em>standard</em></h2>
+        <p class="lead">Every item has a lot number, a size and a price. When we've graded an item, its grade and a plain note about any flaws are on the tag too.</p>
+      </div>
+      <ol class="scale">
+        <li><span class="g">A</span><div><h3>Clean and ready</h3><p>No wear worth mentioning. Cleaned, treated or repaired where needed, and good to use the day it arrives.</p></div></li>
+        <li><span class="g">B</span><div><h3>Honest wear</h3><p>Normal signs of use such as light fading, small scuffs, or patina. Photographed and written down so nothing surprises you.</p></div></li>
+        <li><span class="g">C</span><div><h3>Priced for the work</h3><p>Visible damage or a project piece. The price reflects the flaw and the flaw is the first thing on the tag.</p></div></li>
+      </ol>
+    </div>
+  </section>
+</main>
+
+<footer id="network">
+  <div class="wrap foot">
+    <div>
+      <a class="brand" href="#top" aria-label="Back to top">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><use href="#"/></svg>
+        <span class="brand-word">IBX Shop<small>Inner Banks Exchange</small></span>
+      </a>
+      <p>The storefront for Inner Banks Exchange. Local goods and gear, bought direct and sold with the flaws on the tag.</p>
+    </div>
+    <div>
+      <h4>Inner Banks Exchange</h4>
+      <ul>
+        <li><a href="https://ibxchange.web.app" target="_blank" rel="noopener">Local goods &amp; gear</a></li>
+        <li><a href="https://seeyouryou.web.app" target="_blank" rel="noopener">S.E.E. Engine</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Coming online</h4>
+      <ul>
+        <li><a href="#">Household Knowledge Bank</a></li>
+        <li><a href="#">Route | Philc</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="wrap legal">
+    <span>&copy; 2026 Inner Banks Exchange. Direct local inventory network.</span>
+    <span>IBX Shop</span>
+  </div>
+</footer>
+
+<script>
+/* ---------------------------------------------------------------
+   LIVE INVENTORY
+   Reads the same Firestore collection the Inner Banks Exchange uses
+   (project thruket-site1, collection inventoryItems, sold == false).
+   Add or sell an item in the intake page and this shop updates
+   by itself. Optional fields: grade (A/B/C), flaws, notes.
+   --------------------------------------------------------------- */
+const FIREBASE = { projectId: "thruket-site1", authDomain: "thruket-site1.firebaseapp.com" };
+let LOTS = [];
+let state = "loading"; // loading | ready | empty | error
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* Stencil placeholder for lots with no photo (or a photo that fails to load) */
+function stencil(l) {
+  const word = esc(l.cat.toUpperCase());
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+    <defs><pattern id="h" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="#1d5c60"/><rect width="5" height="14" fill="#16494c"/></pattern></defs>
+    <rect width="400" height="300" fill="url(#h)"/>
+    <rect x="28" y="28" width="344" height="244" fill="none" stroke="#e8d8ad" stroke-width="3" stroke-dasharray="14 8"/>
+    <text x="200" y="150" text-anchor="middle" font-family="Big Shoulders Display, Impact, sans-serif" font-weight="900" font-size="74" fill="#e8d8ad" letter-spacing="3">${word}</text>
+    <text x="200" y="196" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="15" fill="#e8d8ad" letter-spacing="5">LOT IBX-${esc(l.lot)} / PHOTO PENDING</text>
+  </svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+
+/* Lots listed directly on this page (not in Firestore). All are local pickup. */
+const L = "img/lots/";
+const STATIC_LOTS = [
+  { lot: "001", cat: "Home Decor", kind: "Home Decor", title: "Moen Banbury Oval Tilting Wall Mirror, Brushed Nickel (Y2692BN)", specs: { Size: "23 x 26 in" }, grade: "B",
+    desc: "Moen Banbury frameless pivoting oval wall mirror, model Y2692BN, 23 in wide by 26 in tall, with brushed nickel decorative hardware. Comes with its original box. Local pickup.",
+    flaws: "Box shows some wear and scuffs.", price: 45,
+    imgs: ["mirror-moen-banbury-01-box-front", "mirror-moen-banbury-02-box-back", "mirror-moen-banbury-03-label"] },
+  { lot: "002", cat: "Outerwear", kind: "Outerwear", title: "Distortion Men's White Faux Leather Moto Jacket with Black Stripes", specs: { Size: "XL" }, grade: "B",
+    desc: "Distortion men's jacket in white faux leather with black stripes down the sleeves, snap collar, zip chest pockets, welt hip pockets, full zip front, and a dark satin lining. Pre-owned. Local pickup.",
+    flaws: "Light scuffs and marks on the sleeve (see the sleeve photo).", price: 35,
+    imgs: ["jacket-white-faux-leather-01-front", "jacket-white-faux-leather-02-front-alt", "jacket-white-faux-leather-03-back", "jacket-white-faux-leather-04-back-alt", "jacket-white-faux-leather-05-lining", "jacket-white-faux-leather-06-sleeve-wear", "jacket-white-faux-leather-07-brand-label"] },
+  { lot: "003", cat: "Lighting", kind: "Lighting", title: "Brushed Steel Cylinder Table Lamp with Pleated Shade", specs: { Size: "Table lamp" }, grade: "B",
+    desc: "Mid-century style table lamp with a brushed steel cylinder column on a square steel base, with a pleated shade. Pre-owned. Local pickup.",
+    flaws: "Normal wear; see photo.", price: 95, imgs: ["lamp-1-pleated-steel-01"] },
+  { lot: "004", cat: "Lighting", kind: "Lighting", title: "Brushed Nickel Urn Table Lamp with Cream Shade", specs: { Size: "Table lamp" }, grade: "B",
+    desc: "Brushed nickel urn-style table lamp with a tapered square cream shade with dark trim. Pre-owned. Local pickup.",
+    flaws: "Normal wear; see photos.", price: 40,
+    imgs: ["lamp-2-nickel-cream-shade-01", "lamp-2-nickel-cream-shade-02", "lamp-2-nickel-cream-shade-03"] },
+  { lot: "005", cat: "Lighting", kind: "Lighting", title: "Distressed Bronze and Gold Turned-Baluster Table Lamp", specs: { Size: "Table lamp" }, grade: "B",
+    desc: "Table lamp with a distressed bronze and gold finish, a turned baluster stem on a square footed base, and a tapered square cream crinkle shade. Pre-owned. Local pickup.",
+    flaws: "Thrift-store price sticker still on the base (visible in photos).", price: 45,
+    imgs: ["lamp-3-bronze-gold-shade-01", "lamp-3-bronze-gold-shade-02"] }
+].map((s, i) => ({ ...s, gradeNote: "Honest wear", pickup: true, buy: "",
+  imgs: s.imgs.map((n) => L + n + ".jpg"), img: L + s.imgs[0] + ".jpg", ts: Date.parse("2026-10-31T12:00:00") - i * 1000 }));
+
+const money = (p) => (Number.isInteger(p) ? String(p) : p.toFixed(2));
+const hasLink = (u) => typeof u === "string" && u.startsWith("https://");
+const GRADES = { A: "Clean", B: "Honest wear", C: "Priced for the work" };
+
+/* Fixed category list. Older items were typed free-form, so map them onto it. */
+const CATEGORIES = ["Outerwear", "Tops", "Bottoms", "Shoes & Accessories", "Lighting", "Home Decor", "Workshop & Tools", "Other"];
+const CAT_RULES = [
+  [/lamp|light|sconce|pendant|chandelier/i, "Lighting"],
+  [/jacket|coat|hoodie|fleece|vest|parka|windbreaker|outerwear/i, "Outerwear"],
+  [/tee|t-shirt|shirt|top\b|sweater|sweatshirt|blouse|polo|tank/i, "Tops"],
+  [/jean|pant|short|skirt|denim|trouser|legging/i, "Bottoms"],
+  [/shoe|boot|sneaker|belt|hat|cap\b|bag|purse|scarf|watch|jewel|glove/i, "Shoes & Accessories"],
+  [/mirror|clock|decor|frame|vase|art\b|rug|pillow|candle|shelf/i, "Home Decor"],
+  [/tool|plane|wrench|saw|drill|hammer|workshop|vise/i, "Workshop & Tools"]
+];
+function normalizeCat(raw) {
+  const s = String(raw || "").trim();
+  const exact = CATEGORIES.find((c) => c.toLowerCase() === s.toLowerCase());
+  if (exact) return exact;
+  const hit = CAT_RULES.find(([re]) => re.test(s));
+  return hit ? hit[1] : "Other";
+}
+
+/* One Firestore document becomes one tag */
+function fromDoc(doc) {
+  const d = doc.data();
+  const ts = d.created_at && d.created_at.toDate ? d.created_at.toDate() : null;
+  const g = String(d.grade || "").trim().toUpperCase().slice(0, 1);
+  const specs = {};
+  if (d.size) specs.Size = d.size;
+  return {
+    lot: doc.id.slice(0, 4).toUpperCase(),
+    cat: normalizeCat(d.category),
+    kind: d.category || normalizeCat(d.category),
+    title: d.brand || "Vintage",
+    specs,
+    grade: GRADES[g] ? g : "",
+    gradeNote: GRADES[g] || "",
+    flaws: d.flaws || d.notes || "",
+    price: Number(d.price) || 0,
+    buy: d.payment_link,
+    img: d.photo_url || "",
+    ts: ts ? ts.getTime() : 0
+  };
+}
+
+function card(l) {
+  const specs = Object.entries(l.specs).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
+  const src = l.img || stencil(l);
+  const grade = l.grade
+    ? `<div class="grade" aria-label="Grade ${esc(l.grade)}, ${esc(l.gradeNote)}"><b>${esc(l.grade)}</b><span>${esc(l.gradeNote)}</span></div>`
+    : "";
+  const flaws = l.flaws ? `<div class="flaws"><b>Flaws &amp; work done</b>${esc(l.flaws)}</div>` : "";
+  const desc = l.desc ? `<p class="tag-desc">${esc(l.desc)}</p>` : "";
+  const thumbs = l.imgs && l.imgs.length > 1
+    ? `<div class="thumbs">${l.imgs.map((u, i) => `<button type="button" class="thumb" aria-label="Photo ${i + 1} of ${l.imgs.length}" aria-pressed="${i === 0}" data-src="${esc(u)}"><img src="${esc(u)}" alt="" loading="lazy"></button>`).join("")}</div>`
+    : "";
+  const buy = l.pickup
+    ? '<span class="btn buy off">Local pickup</span>'
+    : hasLink(l.buy)
+    ? `<a class="btn buy" href="${esc(l.buy)}" target="_blank" rel="noopener" aria-label="Buy ${esc(l.title)} for $${money(l.price)}">Buy now</a>`
+    : '<span class="btn buy off">Link soon</span>';
+  return `
+  <article class="tag" data-cat="${esc(l.cat)}">
+    <div class="tag-top"><span>Lot IBX-${esc(l.lot)}</span><span class="hole" aria-hidden="true"></span></div>
+    <div class="tag-img">
+      <img src="${esc(src)}" alt="${esc(l.title)} ${esc(l.cat)}" loading="lazy" data-fallback="${esc(l.lot)}">
+      ${grade}
+    </div>
+    ${thumbs}
+    <div class="tag-body">
+      <div class="tag-kind">${esc(l.kind)}</div>
+      <h3 class="tag-title">${esc(l.title)}</h3>
+      ${desc}
+      ${specs ? `<dl class="specs">${specs}</dl>` : ""}
+      ${flaws}
+      <div class="tag-foot">
+        <div class="price"><sup>$</sup>${money(l.price)}</div>
+        ${buy}
+      </div>
+    </div>
+  </article>`;
+}
+
+let active = "All";
+function render() {
+  const grid = $("#grid");
+  if (state === "loading") {
+    grid.innerHTML = '<div class="empty">Connecting to live inventory...</div>';
+    $("#count").textContent = "";
+    return;
+  }
+  if (state === "error") {
+    grid.innerHTML = '<div class="empty">The live inventory did not load. Check your connection and refresh.</div>';
+    $("#count").textContent = "";
+    return;
+  }
+  if (state === "empty") {
+    grid.innerHTML = '<div class="empty">New lots are added regularly. Check back soon.</div>';
+    $("#count").textContent = "0 lots";
+    return;
+  }
+  const list = LOTS.filter((l) => active === "All" || l.cat === active);
+  grid.innerHTML = list.length ? list.map(card).join("") : '<div class="empty">No lots on this shelf right now.</div>';
+  $("#count").textContent = `${list.length} lot${list.length === 1 ? "" : "s"} available`;
+  document.querySelectorAll("#grid img[data-fallback]").forEach((img) => {
+    img.addEventListener("error", () => {
+      const l = LOTS.find((x) => x.lot === img.dataset.fallback);
+      if (l && !img.dataset.failed) { img.dataset.failed = "1"; img.src = stencil(l); }
+    });
+  });
+}
+
+$("#grid").addEventListener("click", (e) => {
+  const t = e.target.closest(".thumb"); if (!t) return;
+  const card = t.closest(".tag");
+  card.querySelector(".tag-img img").src = t.dataset.src;
+  card.querySelectorAll(".thumb").forEach((x) => x.setAttribute("aria-pressed", x === t));
+});
+
+function buildFilters() {
+  if (!LOTS.some((l) => l.cat === active)) active = "All";
+  const cats = ["All", ...new Set(LOTS.map((l) => l.cat))];
+  $("#filters").innerHTML = cats.map((c) => {
+    const n = c === "All" ? LOTS.length : LOTS.filter((l) => l.cat === c).length;
+    return `<button class="chip" type="button" aria-pressed="${c === active}" data-cat="${esc(c)}">${esc(c)}<sup>${n}</sup></button>`;
+  }).join("");
+}
+$("#filters").addEventListener("click", (e) => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  active = b.dataset.cat;
+  document.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  render();
+});
+
+function ledger() {
+  const live = state === "ready";
+  const newest = live ? Math.max(...LOTS.map((l) => l.ts)) : 0;
+  $("#statListed").textContent = live ? LOTS.length : "-";
+  $("#statOpen").textContent = live ? new Set(LOTS.map((l) => l.cat)).size : "-";
+  $("#statSold").textContent = newest ? new Date(newest).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-";
+  $("#ledgerDate").textContent = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function refresh() { ledger(); buildFilters(); render(); }
+
+/* Footer brand mark reuses the masthead SVG */
+const mark = document.querySelector(".masthead .brand-mark");
+const fmark = document.querySelector("footer .brand-mark");
+if (mark && fmark) fmark.innerHTML = mark.innerHTML;
+
+/* Live listener: fires now and again whenever intake adds or sells an item */
+function startLive() {
+  LOTS = [...STATIC_LOTS]; state = "ready";
+  refresh();
+  try {
+    firebase.initializeApp(FIREBASE);
+    firebase.firestore().collection("inventoryItems").where("sold", "==", false).onSnapshot(
+      (snap) => {
+        LOTS = [...STATIC_LOTS, ...snap.docs.map(fromDoc)].sort((a, b) => b.ts - a.ts);
+        state = "ready";
+        refresh();
+      },
+      (err) => { console.error("Inventory listener failed:", err); }
+    );
+  } catch (err) {
+    console.error(err);
+  }
+}
+startLive();
+</script>
+</body>
+</html>
+
+
+

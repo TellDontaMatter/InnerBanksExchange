@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inner Banks Exchange — Inventory Intake</title>
+  <meta name="robots" content="noindex, nofollow">
+  <!-- Firebase App & Firestore Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #181b24;
+      --border: #2a2e3d;
+      --accent: #10b981;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+    .container {
+      width: 100%;
+      max-width: 480px;
+    }
+    header {
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    p.subtitle {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .field {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      background: #11131a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+    }
+    .row .field {
+      flex: 1;
+    }
+    button.submit-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 8px;
+      transition: filter 0.15s, transform 0.1s;
+    }
+    button.submit-btn:hover {
+      filter: brightness(1.1);
+    }
+    button.submit-btn:active {
+      transform: scale(0.99);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .status-banner {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 18px;
+      text-align: center;
+      font-weight: 500;
+    }
+    .status-banner.success {
+      display: block;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--accent);
+      color: #34d399;
+    }
+    .status-banner.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #f87171;
+    }
+    .nav-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .nav-link:hover {
+      color: var(--text);
+      text-decoration: underline;
+    }
+
+    /* ---- Workspace ---- */
+    body.admin .container { max-width: 1100px; }
+    .tiles4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .tile4 { display: block; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; color: var(--text); text-decoration: none; }
+    .tile4 span { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+    .tile4 b { font-size: 30px; line-height: 1; }
+    .flags { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    .flag { background: var(--card); border: 1px solid var(--accent); border-radius: 12px; padding: 14px 16px; }
+    .flaghead { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .flaghead b { font-size: 16px; }
+    .flaghead a { margin-left: auto; color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; }
+    .flaghead .dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7280; flex: none; }
+    .flaghead .dot.up { background: #10b981; }
+    .flaghead .dot.down { background: #ef4444; }
+    .flagstats { display: flex; gap: 20px; flex-wrap: wrap; }
+    .flagstats a { color: var(--text); text-decoration: none; }
+    .flagstats a b { display: block; font-size: 28px; line-height: 1; }
+    .flagstats a span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .flagstats a.hot b { color: #f59e0b; }
+    .tile4.hot { border-color: #f59e0b; }
+    .tile4.hot b { color: #f59e0b; }
+    .ws { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; align-items: start; }
+    @media (max-width: 860px) { .ws { grid-template-columns: minmax(0, 1fr); } }
+    .wstabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .wstabs button { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+    .wstabs button.on { background: var(--accent); border-color: var(--accent); color: #06130d; font-weight: 700; }
+    .wstabs i { font-style: normal; opacity: .75; margin-left: 4px; }
+    .pane[hidden] { display: none; }
+    .proj { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); color: var(--text); text-decoration: none; }
+    .proj:last-child { border-bottom: 0; }
+    .proj b { display: block; font-size: 14px; }
+    .proj small { color: var(--muted); font-size: 12px; }
+    .proj .dot { width: 9px; height: 9px; border-radius: 50%; background: #6b7280; flex: none; }
+    .proj .dot.up { background: #10b981; }
+    .proj .dot.down { background: #ef4444; }
+    .proj .arrow { margin-left: auto; color: var(--accent); }
+    .projlink { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; color: var(--text); text-decoration: none; }
+    .proj .rm { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; flex: none; }
+    .proj .rm:hover { border-color: #ef4444; color: #ef4444; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Log New Inventory</h1>
+      <p class="subtitle">Inner Banks Exchange admin</p>
+      <nav class="sitenav" aria-label="Live sites" style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;margin-top:10px;font-size:14px">
+        <a href="https://ibxconnect.web.app/" style="color:var(--accent,#10b981);text-decoration:none;font-weight:600" target="_blank" rel="noopener">Community Board</a>
+        <a href="https://ibxshop.web.app/" style="color:var(--accent,#10b981);text-decoration:none;font-weight:600" target="_blank" rel="noopener">Shop</a>
+        <a href="https://ibxhelp.web.app/" style="color:var(--accent,#10b981);text-decoration:none;font-weight:600" target="_blank" rel="noopener">Help Wanted</a>
+      </nav>
+    </header>
+
+    <div id="statusBanner" class="status-banner"></div>
+
+    <div class="card" id="loginCard">
+      <form id="loginForm">
+        <div class="field">
+          <label for="loginEmail">Admin email</label>
+          <input type="email" id="loginEmail" value="philctellsit@gmail.com" required>
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" required>
+        </div>
+        <button type="submit" class="submit-btn">Log in</button>
+      </form>
+    </div>
+
+    <div id="adminArea" style="display:none">
+    <div id="summary" class="card" style="display:none;margin-bottom:16px;font-weight:700"></div>
+    <div class="flags" id="flagships">
+      <section class="flag">
+        <div class="flaghead"><span class="dot" id="flagShopDot"></span><b>IBX Shop</b><a href="https://ibxshop.web.app/" target="_blank" rel="noopener">Open site &rarr;</a></div>
+        <div class="flagstats">
+          <a id="flagItemsBox" href="#itemList"><b id="flagItems">-</b><span>Unsold items</span></a>
+        </div>
+      </section>
+      <section class="flag">
+        <div class="flaghead"><span class="dot" id="flagConnectDot"></span><b>IBX Connect</b><a href="https://ibxconnect.web.app/" target="_blank" rel="noopener">Open site &rarr;</a></div>
+        <div class="flagstats">
+          <a id="flagPostsBox" href="#ws-new" data-pane="posts"><b id="flagPosts">-</b><span>New posts</span></a>
+          <a id="flagCommentsBox" href="#ws-new" data-pane="comments"><b id="flagComments">-</b><span>Comments</span></a>
+          <a id="flagReportsBox" href="#ws-new" data-pane="reports"><b id="flagReports">-</b><span>Reports</span></a>
+        </div>
+      </section>
+    </div>
+    <p id="flagChecked" style="color:var(--muted);font-size:12px;margin:-4px 0 4px">Checking your flagship sites...</p>
+    <p id="flagAuto" style="color:var(--muted);font-size:12px;margin:0 0 16px"></p>
+    <div class="tiles4">
+      <a class="tile4" id="tilePostsBox" href="#ws-new" data-pane="posts"><span>New posts</span><b id="tilePosts">-</b></a>
+      <a class="tile4" id="tileCommentsBox" href="#ws-new" data-pane="comments"><span>Comments</span><b id="tileComments">-</b></a>
+      <a class="tile4" id="tileReportsBox" href="#ws-new" data-pane="reports"><span>Reports</span><b id="tileReports">-</b></a>
+      <a class="tile4" href="#itemList"><span>Unsold items</span><b id="tileItems">-</b></a>
+      <a class="tile4" href="#intakeForm" style="border-color:var(--accent)"><span>Quick add</span><b style="font-size:20px;color:var(--accent)">+ Inventory</b></a>
+      <a class="tile4" href="#spotForm"><span>Announce</span><b style="font-size:20px">+ Spotlight</b></a>
+    </div>
+    <div class="ws">
+      <section class="card" id="ws-new">
+        <h2 style="margin:0 0 4px;font-size:18px">New posts</h2>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Approve or remove here, without leaving the page. See it live: <a href="https://ibxconnect.web.app/#board" style="color:var(--accent);text-decoration:none;font-weight:600" target="_blank" rel="noopener">Community board</a> &middot; <a href="https://ibxhelp.web.app/#board" style="color:var(--accent);text-decoration:none;font-weight:600" target="_blank" rel="noopener">Help Wanted board</a></p>
+        <div class="wstabs" role="group" aria-label="What needs you">
+          <button type="button" data-pane="posts" class="on">Posts <i id="tabPosts">0</i></button>
+          <button type="button" data-pane="comments">Comments <i id="tabComments">0</i></button>
+          <button type="button" data-pane="reports">Reports <i id="tabReports">0</i></button>
+        </div>
+        <div class="pane" id="pane-posts"><div id="postList" style="display:grid;gap:12px"></div></div>
+        <div class="pane" id="pane-comments" hidden><div id="commentList" style="display:grid;gap:10px"></div></div>
+        <div class="pane" id="pane-reports" hidden><div id="reportList" style="display:grid;gap:10px"></div></div>
+      </section>
+      <section class="card">
+        <h2 style="margin:0 0 12px;font-size:18px">Projects</h2>
+        <div id="projList"></div>
+        <details style="margin-top:12px">
+          <summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:14px">Add a project</summary>
+          <form id="projForm" style="display:grid;gap:8px;margin-top:10px">
+            <input id="projName" placeholder="Name (e.g. My new site)" maxlength="40" required>
+            <input id="projUrl" type="url" placeholder="https://..." required>
+            <input id="projNote" placeholder="What it is (optional)" maxlength="60">
+            <button type="submit" class="submit-btn">Add to dashboard</button>
+          </form>
+        </details>
+        <p style="color:var(--muted);font-size:12px;margin-top:12px">The dot shows whether each site answered just now. Your list is private to your login. <span id="projSync" style="font-weight:600">Checking sync...</span></p>
+      </section>
+    </div>
+    <div class="card">
+      <form id="intakeForm">
+        <div class="field">
+          <label for="brand">Brand</label>
+          <input type="text" id="brand" placeholder="e.g. Champion, Tommy Hilfiger" required>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="category">Category</label>
+            <select id="category" required>
+              <option value="" disabled selected>Pick one</option>
+              <option>Outerwear</option>
+              <option>Tops</option>
+              <option>Bottoms</option>
+              <option>Shoes &amp; Accessories</option>
+              <option>Lighting</option>
+              <option>Home Decor</option>
+              <option>Workshop &amp; Tools</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="size">Size</label>
+            <input type="text" id="size" placeholder="e.g. L, XL, 3XL" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="price">Price ($ USD)</label>
+          <input type="number" id="price" placeholder="e.g. 25" min="1" step="any" required>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="grade">Grade (optional)</label>
+            <select id="grade">
+              <option value="" selected>No grade</option>
+              <option value="A">A: Clean and ready</option>
+              <option value="B">B: Honest wear</option>
+              <option value="C">C: Priced for the work</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="flaws">Flaws &amp; work done (optional)</label>
+            <input type="text" id="flaws" maxlength="160" placeholder="e.g. Small chip on rim. Rewired.">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="photoFile">Photo</label>
+          <input type="file" id="photoFile" accept="image/*" capture="environment" style="padding:10px">
+          <img id="photoPreview" alt="" style="display:none;width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-top:8px;border:1px solid var(--border)">
+          <small id="photoHint" style="display:block;margin-top:6px;color:var(--muted)">Take a photo or pick one from your phone. It's shrunk and saved with the item, no link needed.</small>
+        </div>
+        <div class="field">
+          <label for="photoUrl">Or paste a photo link (optional)</label>
+          <input type="url" id="photoUrl" placeholder="https://...">
+        </div>
+
+        <div class="field">
+          <label for="paymentLink">Stripe Buy Link</label>
+          <input type="url" id="paymentLink" placeholder="https://buy.stripe.com/..." required>
+          <small style="display:block;margin-top:6px;color:var(--muted)">Tip: in Stripe, open this Payment Link, choose Restrictions, and limit it to 1 payment. That stops two people buying the same item.</small>
+        </div>
+
+        <button type="submit" id="submitBtn" class="submit-btn">Save to Inventory</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2 style="margin:0 0 12px;font-size:18px">Unsold items</h2>
+      <p style="margin:-6px 0 12px;font-size:13px;display:flex;flex-wrap:wrap;gap:4px 16px"><a href="https://ibxshop.web.app/" style="color:var(--accent,#10b981);text-decoration:none;font-weight:600" target="_blank" rel="noopener">See them in the shop &rarr;</a></p>
+      <div id="itemList" style="display:grid;gap:8px"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2 style="margin:0 0 12px;font-size:18px">Community board settings</h2>
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="commentsToggle" style="width:auto"> Allow comments on the board (site-wide)</label>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2 style="margin:0 0 12px;font-size:18px">Post a Spotlight</h2>
+      <p style="margin:-6px 0 12px;font-size:13px;display:flex;flex-wrap:wrap;gap:4px 16px"><a href="https://ibxconnect.web.app/" style="color:var(--accent,#10b981);text-decoration:none;font-weight:600" target="_blank" rel="noopener">See announcements on the community page &rarr;</a></p>
+      <form id="spotForm" style="display:grid;gap:10px">
+        <input id="spTitle" placeholder="Headline (e.g. Hiring: Edenton Utilities)" maxlength="100" required>
+        <textarea id="spBody" placeholder="The details people can't easily find" maxlength="1500" required style="min-height:100px"></textarea>
+        <input id="spLink" type="url" placeholder="More info link (optional)">
+        <button type="submit" class="submit-btn">Pin Spotlight</button>
+      </form>
+      <div id="spotList" style="display:grid;gap:8px;margin-top:14px"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2 style="margin:0 0 12px;font-size:18px">Live community posts</h2>
+      <p style="margin:-6px 0 12px;font-size:13px;display:flex;flex-wrap:wrap;gap:4px 16px"><a href="https://ibxconnect.web.app/#board" style="color:var(--accent,#10b981);text-decoration:none;font-weight:600" target="_blank" rel="noopener">Community board &rarr;</a><a href="https://ibxhelp.web.app/#board" style="color:var(--accent,#10b981);text-decoration:none;font-weight:600" target="_blank" rel="noopener">Help Wanted board &rarr;</a></p>
+      <div id="liveList" style="display:grid;gap:10px"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2 style="margin:0 0 12px;font-size:18px">Backup</h2>
+      <p style="color:var(--muted);margin-bottom:10px">Downloads everything (inventory, posts, spotlights, comments, reports) as one file. Do this monthly and keep it somewhere safe.</p>
+      <button type="button" id="backupBtn" class="submit-btn">Download backup</button>
+    </div>
+    <a href="#" id="logoutLink" class="nav-link">Log out</a>
+    </div>
+  </div>
+
+  <script>
+    // ── FIREBASE CONFIGURATION (thruket-site1) ──
+    // Replace with your project config from Firebase Console if needed.
+    const firebaseConfig = {
+      apiKey: "AIzaSyCoasi8-mc8yu3dfV6rwGY3W8uBKWhrGWY",
+      projectId: "thruket-site1",
+      authDomain: "thruket-site1.firebaseapp.com",
+      storageBucket: "thruket-site1.firebasestorage.app",
+      appId: "1:672207336404:web:e7d4f0ec85db6850bb5c41"
+    };
+
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    const loginCard = document.getElementById('loginCard');
+    const adminArea = document.getElementById('adminArea');
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await auth.signInWithEmailAndPassword(
+          document.getElementById('loginEmail').value.trim(),
+          document.getElementById('loginPassword').value
+        );
+      } catch (err) {
+        const b = document.getElementById('statusBanner');
+        b.textContent = 'Login failed: ' + err.message;
+        b.className = 'status-banner error';
+      }
+    });
+
+    document.getElementById('logoutLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      auth.signOut();
+    });
+
+    auth.onAuthStateChanged((user) => {
+      loginCard.style.display = user ? 'none' : 'block';
+      adminArea.style.display = user ? 'block' : 'none';
+      document.body.classList.toggle('admin', !!user);
+      const h1 = document.querySelector('header h1'); if (h1) h1.textContent = user ? 'Workspace' : 'Log New Inventory';
+      if (user) {
+        loadItems(); loadPosts(); loadSettings(); loadSpotlights(); loadComments(); loadLive(); loadReports(); loadSummary();
+        checkFlagships(); loadProjectsRemote();
+        if (!window.summaryTimer) window.summaryTimer = setInterval(() => { if (auth.currentUser) { loadSummary(); checkFlagships(); } }, 20000);
+      }
+    });
+
+    async function loadSummary() {
+      const [p, c, r] = await Promise.all([
+        db.collection('posts').where('status', '==', 'pending').get(),
+        db.collection('comments').where('status', '==', 'pending').get(),
+        db.collection('reports').get()
+      ]);
+      const box = document.getElementById('summary');
+      const n = p.size + c.size + r.size;
+      box.textContent = n ? `Needs you: ${p.size} post(s), ${c.size} comment(s), ${r.size} report(s)` : 'All caught up. Nothing waiting.';
+      box.style.borderColor = n ? '#f59e0b' : 'var(--border)';
+      const put = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+      put('tilePosts', p.size); put('tileComments', c.size); put('tileReports', r.size);
+      put('flagPosts', p.size); put('flagComments', c.size); put('flagReports', r.size);
+      [['flagPostsBox', p.size], ['flagCommentsBox', c.size], ['flagReportsBox', r.size]].forEach(([id, v]) => { const e = document.getElementById(id); if (e) e.classList.toggle('hot', v > 0); });
+      put('tabPosts', p.size); put('tabComments', c.size); put('tabReports', r.size);
+      [['tilePostsBox', p.size], ['tileCommentsBox', c.size], ['tileReportsBox', r.size]].forEach(([id, v]) => { const e = document.getElementById(id); if (e) e.classList.toggle('hot', v > 0); });
+      db.collection('inventoryItems').where('sold', '==', false).get().then(s => { put('tileItems', s.size); put('flagItems', s.size); }).catch(() => {});
+      document.title = (n ? `(${n}) ` : '') + 'Inner Banks Exchange — Admin';
+    }
+
+    async function loadReports() {
+      const list = document.getElementById('reportList');
+      const snap = await db.collection('reports').get();
+      list.innerHTML = '';
+      if (snap.empty) { list.textContent = 'No reports.'; return; }
+      snap.forEach(doc => {
+        const d = doc.data();
+        const box = mk('div', null, 'border:1px solid var(--border);border-radius:8px;padding:10px');
+        box.append(
+          mk('div', 'Post: ' + d.postId, 'font-weight:700'),
+          mk('div', d.reason, 'margin:6px 0;color:var(--muted);white-space:pre-wrap'),
+          btn('Remove the post', async () => {
+            if (!confirm('Remove the reported post and clear this report?')) return;
+            await db.collection('posts').doc(String(d.postId).replace(/^p-/, '')).delete().catch(() => {});
+            await db.collection('reports').doc(doc.id).delete();
+            loadReports(); loadLive(); loadSummary();
+          }),
+          btn('Dismiss report', async () => { await db.collection('reports').doc(doc.id).delete(); loadReports(); loadSummary(); })
+        );
+        list.appendChild(box);
+      });
+    }
+
+    document.getElementById('backupBtn').addEventListener('click', async () => {
+      const out = { exported_at: new Date().toISOString() };
+      for (const c of ['inventoryItems', 'posts', 'spotlights', 'comments', 'reports', 'settings']) {
+        const s = await db.collection(c).get();
+        out[c] = s.docs.map(d => ({ id: d.id, ...d.data() }));
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+      a.download = 'ibx-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.click();
+    });
+
+    // ── PHOTOS: shrink on-device and store as a data URL inside the item ──
+    // (No Storage bucket exists on this project, so the image lives in Firestore.)
+    function fileToDataUrl(file, maxSide = 1000, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * scale);
+          c.height = Math.round(img.height * scale);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          const out = c.toDataURL('image/jpeg', quality);
+          if (out.length > 900000) reject(new Error('Photo is still too big after shrinking. Try a smaller one.'));
+          else resolve(out);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that image.')); };
+        img.src = url;
+      });
+    }
+
+    let photoData = '';
+    document.getElementById('photoFile').addEventListener('change', async (e) => {
+      const f = e.target.files[0];
+      const prev = document.getElementById('photoPreview');
+      const hint = document.getElementById('photoHint');
+      photoData = '';
+      prev.style.display = 'none';
+      if (!f) return;
+      try {
+        hint.textContent = 'Shrinking photo...';
+        photoData = await fileToDataUrl(f);
+        prev.src = photoData;
+        prev.style.display = 'block';
+        hint.textContent = `Ready (${Math.round(photoData.length * 0.75 / 1024)} KB).`;
+      } catch (err) {
+        hint.textContent = err.message;
+        e.target.value = '';
+      }
+    });
+
+    // Hidden picker used by the "Fix photo" buttons on existing items
+    const fixPicker = document.createElement('input');
+    fixPicker.type = 'file'; fixPicker.accept = 'image/*'; fixPicker.style.display = 'none';
+    document.body.appendChild(fixPicker);
+    function pickPhotoFor(docId, label) {
+      fixPicker.onchange = async () => {
+        const f = fixPicker.files[0]; fixPicker.value = '';
+        if (!f) return;
+        try {
+          const data = await fileToDataUrl(f);
+          await db.collection('inventoryItems').doc(docId).update({ photo_url: data });
+          banner.textContent = `✓ Photo updated for ${label}`;
+          banner.className = 'status-banner success';
+          loadItems();
+        } catch (err) {
+          banner.textContent = 'Photo update failed: ' + err.message;
+          banner.className = 'status-banner error';
+        }
+      };
+      fixPicker.click();
+    }
+
+    function mk(tag, text, css) {
+      const e = document.createElement(tag);
+      if (text != null) e.textContent = text;
+      if (css) e.style.cssText = css;
+      return e;
+    }
+    function btn(label, fn) { const b = mk('button', label, 'margin-right:8px'); b.onclick = fn; return b; }
+
+    async function loadSettings() {
+      const t = document.getElementById('commentsToggle');
+      const s = await db.collection('settings').doc('site').get();
+      t.checked = !(s.exists && s.data().comments_enabled === false);
+      t.onchange = () => db.collection('settings').doc('site').set({ comments_enabled: t.checked }, { merge: true });
+    }
+
+    document.getElementById('spotForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await db.collection('spotlights').add({
+        title: document.getElementById('spTitle').value.trim(),
+        body: document.getElementById('spBody').value.trim(),
+        url: document.getElementById('spLink').value.trim(),
+        created_at: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      e.target.reset();
+      loadSpotlights();
+    });
+
+    async function loadSpotlights() {
+      const list = document.getElementById('spotList');
+      const snap = await db.collection('spotlights').get();
+      list.innerHTML = '';
+      snap.forEach(doc => {
+        const d = doc.data();
+        const row = mk('div', null, 'display:flex;justify-content:space-between;gap:8px;align-items:center');
+        row.append(mk('span', '⭐ ' + d.title));
+        const cm = btn(d.comments_off ? 'Comments: off' : 'Comments: on', async () => {
+          await db.collection('spotlights').doc(doc.id).update({ comments_off: !d.comments_off }); loadSpotlights();
+        });
+        const del = btn('Remove', async () => {
+          if (confirm('Remove this spotlight?')) { await db.collection('spotlights').doc(doc.id).delete(); loadSpotlights(); }
+        });
+        const wrap = mk('span'); wrap.append(cm, del);
+        row.appendChild(wrap);
+        list.appendChild(row);
+      });
+    }
+
+    async function loadComments() {
+      const list = document.getElementById('commentList');
+      const snap = await db.collection('comments').where('status', '==', 'pending').get();
+      list.innerHTML = '';
+      if (snap.empty) { list.textContent = 'Nothing waiting.'; return; }
+      snap.forEach(doc => {
+        const d = doc.data();
+        const box = mk('div', null, 'border:1px solid var(--border);border-radius:8px;padding:10px');
+        box.append(
+          mk('div', `${d.name || 'Neighbor'} on ${d.postId}`, 'font-weight:700'),
+          mk('div', d.text, 'margin:6px 0;color:var(--muted);white-space:pre-wrap'),
+          btn('Approve', async () => { await db.collection('comments').doc(doc.id).update({ status: 'approved' }); loadComments(); }),
+          btn('Delete', async () => { await db.collection('comments').doc(doc.id).delete(); loadComments(); })
+        );
+        list.appendChild(box);
+      });
+    }
+
+    async function loadLive() {
+      const list = document.getElementById('liveList');
+      const snap = await db.collection('posts').where('status', '==', 'approved').get();
+      list.innerHTML = '';
+      if (snap.empty) { list.textContent = 'No live posts.'; return; }
+      snap.forEach(doc => {
+        const d = doc.data();
+        const row = mk('div', null, 'display:flex;justify-content:space-between;gap:8px;align-items:center');
+        row.append(mk('span', `[${d.category}] ${d.title}`));
+        const cm = btn(d.comments_off ? 'Comments: off' : 'Comments: on', async () => {
+          await db.collection('posts').doc(doc.id).update({ comments_off: !d.comments_off }); loadLive();
+        });
+        const del = btn('Remove', async () => {
+          if (confirm('Remove this post?')) { await db.collection('posts').doc(doc.id).delete(); loadLive(); }
+        });
+        const wrap = mk('span'); wrap.append(cm, del);
+        row.appendChild(wrap);
+        list.appendChild(row);
+      });
+    }
+
+    async function loadPosts() {
+      const list = document.getElementById('postList');
+      const snap = await db.collection('posts').where('status', '==', 'pending').get();
+      list.innerHTML = '';
+      if (snap.empty) { list.textContent = 'Nothing waiting.'; return; }
+      snap.forEach(doc => {
+        const d = doc.data();
+        const box = document.createElement('div');
+        box.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:10px';
+        const head = document.createElement('div');
+        head.style.fontWeight = '700';
+        head.textContent = `[${d.category}${d.county ? ' / ' + d.county : ''}] ${d.title}`;
+        const body = document.createElement('div');
+        body.style.cssText = 'white-space:pre-wrap;margin:6px 0;color:var(--muted)';
+        body.textContent = `${d.description}\nContact: ${d.contact}`;
+        const ok = document.createElement('button');
+        ok.textContent = 'Approve';
+        ok.onclick = async () => { await db.collection('posts').doc(doc.id).update({ status: 'approved' }); loadPosts(); };
+        const no = document.createElement('button');
+        no.textContent = 'Delete';
+        no.style.marginLeft = '8px';
+        no.onclick = async () => { await db.collection('posts').doc(doc.id).delete(); loadPosts(); };
+        box.append(head, body, ok, no);
+        list.appendChild(box);
+      });
+    }
+
+    async function loadItems() {
+      const list = document.getElementById('itemList');
+      const snap = await db.collection('inventoryItems').where('sold', '==', false).get();
+      list.innerHTML = '';
+      if (snap.empty) { list.textContent = 'No unsold items.'; return; }
+      snap.forEach(doc => {
+        const d = doc.data();
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px';
+        const label = document.createElement('span');
+        label.textContent = `${d.brand || ''} ${d.category || ''} · ${d.size || ''} · $${d.price}`;
+        const thumb = document.createElement('img');
+        thumb.src = d.photo_url || '';
+        thumb.alt = '';
+        thumb.style.cssText = 'width:40px;height:40px;object-fit:cover;border-radius:6px;background:#11131a;flex:none';
+        thumb.onerror = () => { thumb.style.outline = '2px solid #ef4444'; thumb.title = 'Photo is broken'; };
+        const fix = document.createElement('button');
+        fix.textContent = 'Fix photo';
+        fix.style.marginRight = '8px';
+        fix.onclick = () => pickPhotoFor(doc.id, `${d.brand || ''} ${d.category || ''}`);
+        const btn = document.createElement('button');
+        btn.textContent = 'Mark Sold';
+        btn.onclick = async () => {
+          if (!confirm(`Mark "${d.brand} ${d.category}" as SOLD?`)) return;
+          await db.collection('inventoryItems').doc(doc.id).update({
+            sold: true,
+            sold_at: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          loadItems();
+        };
+        const actions = document.createElement('span');
+        actions.style.cssText = 'display:flex;gap:0;flex:none';
+        actions.append(fix, btn);
+        row.append(thumb, label, actions);
+        list.appendChild(row);
+      });
+    }
+
+    const form = document.getElementById('intakeForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const banner = document.getElementById('statusBanner');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      banner.className = 'status-banner';
+      banner.style.display = 'none';
+
+      const photo = photoData || document.getElementById('photoUrl').value.trim();
+      if (!photo) {
+        banner.textContent = 'Add a photo (take one, or paste a link) before saving.';
+        banner.className = 'status-banner error';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
+
+      const itemData = {
+        brand: document.getElementById('brand').value.trim(),
+        category: document.getElementById('category').value.trim(),
+        size: document.getElementById('size').value.trim(),
+        price: parseFloat(document.getElementById('price').value),
+        photo_url: photo,
+        payment_link: document.getElementById('paymentLink').value.trim(),
+        grade: document.getElementById('grade').value,
+        flaws: document.getElementById('flaws').value.trim(),
+        sold: false,
+        created_at: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      try {
+        await db.collection('inventoryItems').add(itemData);
+
+        banner.textContent = `✓ Item "${itemData.brand} ${itemData.category}" added to inventory!`;
+        banner.className = 'status-banner success';
+
+        form.reset();
+        photoData = '';
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('photoHint').textContent = "Take a photo or pick one from your phone. It's shrunk and saved with the item, no link needed.";
+        document.getElementById('brand').focus();
+        loadItems();
+      } catch (err) {
+        console.error("Firestore write failed:", err);
+        banner.textContent = `Error: ${err.message || 'Failed to save item.'}`;
+        banner.className = 'status-banner error';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save to Inventory';
+      }
+    });
+  
+    /* ---- Workspace: tabs, projects, live counts ---- */
+    function showPane(name) {
+      document.querySelectorAll('.wstabs button').forEach(b => b.classList.toggle('on', b.dataset.pane === name));
+      ['posts', 'comments', 'reports'].forEach(n => { const el = document.getElementById('pane-' + n); if (el) el.hidden = (n !== name); });
+    }
+    document.querySelectorAll('[data-pane]').forEach(el => el.addEventListener('click', () => showPane(el.dataset.pane)));
+
+    // Starting list (public sites only; this page's source is visible to anyone). Anything you add or remove
+    // is saved in this browser, so private projects never go into the page itself.
+    const DEFAULT_PROJECTS = [
+      { name: 'IBX Connect', note: 'Community board', url: 'https://ibxconnect.web.app/' },
+      { name: 'IBX Shop', note: 'Storefront', url: 'https://ibxshop.web.app/' },
+      { name: 'IBX Help', note: 'Help wanted and services offered', url: 'https://ibxhelp.web.app/' },
+      { name: 'Suffsa', note: 'Learning app', url: 'https://suffsa.netlify.app/' },
+      { name: 'Route | Philc', note: 'PCS move planner', url: 'https://movebyphilc.netlify.app/' },
+      { name: 'S.E.E. Engine', note: 'Decision evaluation', url: 'https://seeyouryou.web.app/' },
+      { name: 'City Pay', note: 'Unit-price lookup (Grok bot)', url: 'https://city-pay.pages.dev/' }
+    ];
+    let projects = DEFAULT_PROJECTS.slice();
+    try { const s = JSON.parse(localStorage.getItem('ibxProjects') || 'null'); if (Array.isArray(s)) projects = s; } catch (e) {}
+    // Sync: the list also lives in Firestore (dashboard/projects, readable only when logged in), so every
+    // device shows the same list. If Firestore refuses (rules not set yet), it falls back to this browser.
+    const cleanProjects = (arr) => arr.filter(p => p && typeof p.name === 'string' && typeof p.url === 'string' && /^https?:\/\//i.test(p.url))
+      .map(p => ({ name: p.name.slice(0, 40), url: p.url, note: typeof p.note === 'string' ? p.note.slice(0, 60) : '' }));
+    const setSync = (msg, ok) => { const e = document.getElementById('projSync'); if (e) { e.textContent = msg; e.style.color = ok ? 'var(--accent)' : 'var(--muted)'; } };
+    const saveLocal = () => { try { localStorage.setItem('ibxProjects', JSON.stringify(projects)); } catch (e) {} };
+    const pushProjects = () => {
+      if (!auth.currentUser) return Promise.resolve();
+      return db.collection('dashboard').doc('projects')
+        .set({ list: projects, updated_at: firebase.firestore.FieldValue.serverTimestamp() })
+        .then(() => setSync('Synced across your devices', true))
+        .catch(() => setSync('Saved on this device only (cloud sync is not enabled in Firebase yet)', false));
+    };
+    const saveProjects = () => { saveLocal(); pushProjects(); };
+    async function loadProjectsRemote() {
+      try {
+        const d = await db.collection('dashboard').doc('projects').get();
+        if (d.exists && Array.isArray(d.data().list)) {
+          projects = cleanProjects(d.data().list); saveLocal(); renderProjects(); setSync('Synced across your devices', true);
+        } else {
+          await pushProjects(); // first run: publish this browser's list
+        }
+      } catch (e) { setSync('Saved on this device only (cloud sync is not enabled in Firebase yet)', false); }
+    }
+    const FLAGSHIPS = [['flagShopDot', 'https://ibxshop.web.app/'], ['flagConnectDot', 'https://ibxconnect.web.app/']];
+    function checkFlagships() {
+      const nd = new Date(), autoKey = nd.getUTCFullYear() + '-' + (nd.getUTCMonth() + 1) + '-' + nd.getUTCDate();
+      db.collection('autoCounts').doc(autoKey).get().then(s => {
+        const n = s.exists ? (s.data().n || 0) : 0, e = document.getElementById('flagAuto');
+        if (e) e.textContent = 'Auto-approved posts today: ' + n + ' of 20' + (n >= 20 ? ' (cap reached, new posts wait for you)' : '') + '. Remove any live post under Live posts.';
+      }).catch(() => {});
+      Promise.all(FLAGSHIPS.map(([id, url]) => {
+        const dot = document.getElementById(id);
+        return fetch(url, { mode: 'no-cors', cache: 'no-store' })
+          .then(() => { dot.classList.add('up'); dot.classList.remove('down'); return true; })
+          .catch(() => { dot.classList.add('down'); dot.classList.remove('up'); return false; });
+      })).then(r => {
+        const e = document.getElementById('flagChecked'); if (!e) return;
+        const t = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        e.textContent = (r.every(Boolean) ? 'Both flagship sites answered' : 'A flagship site did not answer') + ' at ' + t + '. Counts refresh every 20 seconds.';
+        e.style.color = r.every(Boolean) ? 'var(--muted)' : '#ef4444';
+      });
+    }
+    function renderProjects() {
+      const box = document.getElementById('projList');
+      box.textContent = '';
+      if (!projects.length) { box.textContent = 'No projects yet. Add one below.'; return; }
+      projects.forEach((pr, i) => {
+        const row = document.createElement('div'); row.className = 'proj';
+        const a = document.createElement('a'); a.className = 'projlink'; a.href = pr.url; a.target = '_blank'; a.rel = 'noopener';
+        const dot = document.createElement('span'); dot.className = 'dot';
+        const txt = document.createElement('span'); txt.style.minWidth = '0';
+        const b = document.createElement('b'); b.textContent = pr.name;
+        const s = document.createElement('small'); s.textContent = pr.note || pr.url.replace(/^https?:\/\//, '');
+        txt.append(b, s);
+        const ar = document.createElement('span'); ar.className = 'arrow'; ar.textContent = '\u2192';
+        a.append(dot, txt, ar);
+        const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'rm'; rm.textContent = '\u00D7';
+        rm.title = 'Remove from this dashboard'; rm.setAttribute('aria-label', 'Remove ' + pr.name);
+        rm.onclick = () => { if (confirm('Remove "' + pr.name + '" from this dashboard? The site itself is not touched.')) { projects.splice(i, 1); saveProjects(); renderProjects(); } };
+        row.append(a, rm);
+        box.appendChild(row);
+        fetch(pr.url, { mode: 'no-cors', cache: 'no-store' }).then(() => dot.classList.add('up')).catch(() => dot.classList.add('down'));
+      });
+    }
+    document.getElementById('projForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('projName').value.trim();
+      const url = document.getElementById('projUrl').value.trim();
+      if (!name || !/^https?:\/\//i.test(url)) return;
+      projects.push({ name, url, note: document.getElementById('projNote').value.trim() });
+      saveProjects(); renderProjects(); e.target.reset();
+    });
+    renderProjects();
+    // refresh the counts whenever a list reloads (approve, remove, dismiss)
+    ['loadPosts', 'loadComments', 'loadItems'].forEach(name => {
+      const orig = window[name];
+      if (typeof orig === 'function') window[name] = async function () { const out = await orig.apply(this, arguments); loadSummary(); return out; };
+    });
+  </script>
+</body>
+</html>
+
+

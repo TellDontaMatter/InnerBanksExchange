@@ -1,0 +1,895 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Suffsa</title><meta name="description" content="Learn AI, automation and communication skills the way your brain actually keeps them."></head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: notebook-and-highlighter. A single reading column for the site, a two-column app shell on wide screens. Highlighter lime marks what matters; four format colors carry the learning-profile story. */
+:root{
+  --bg:#f3f5f0; --surface:#ffffff; --surface-2:#e9ede4; --ink:#141b2d; --muted:#596274; --line:#d6dccf;
+  --hi:#d6f25a; --on-hi:#141b2d; --good:#0f8a5f; --bad:#c43c3c;
+  --vis:#3a64f5; --verb:#7c4fe8; --story:#e85a35; --doing:#0f9468;
+  --display:"Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body:"Public Sans", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e121b; --surface:#161b27; --surface-2:#1e2432; --ink:#edf0f5; --muted:#9aa3b4; --line:#2a3141;
+  --hi:#cdea4f; --on-hi:#141b2d; --good:#3ccf94; --bad:#ff7a7a;
+  --vis:#7393ff; --verb:#a888ff; --story:#ff8a63; --doing:#33c48f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e121b; --surface:#161b27; --surface-2:#1e2432; --ink:#edf0f5; --muted:#9aa3b4; --line:#2a3141;
+  --hi:#cdea4f; --on-hi:#141b2d; --good:#3ccf94; --bad:#ff7a7a;
+  --vis:#7393ff; --verb:#a888ff; --story:#ff8a63; --doing:#33c48f; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+h1,h2,h3{font-family:var(--display);line-height:1.1;margin:0;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--vis);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mark{background:linear-gradient(transparent 58%,var(--hi) 58%,var(--hi) 94%,transparent 94%);padding:0 .08em}
+
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:12px;display:flex;align-items:center;gap:12px}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:1.25rem;background:none;border:0;cursor:pointer;padding:0}
+.logo svg{width:26px;height:26px}
+.nav-links{display:flex;gap:4px;margin-left:auto;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.nl{background:none;border:0;padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:600;color:var(--muted)}
+.nl:hover,.nl.on{color:var(--ink);background:var(--surface-2)}
+.nl .count{font-family:var(--mono);font-size:.72rem;background:var(--hi);color:var(--on-hi);border-radius:999px;padding:1px 7px;margin-left:4px}
+
+/* layout */
+.page{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:32px 72px}
+.narrow{max-width:680px;margin:0 auto}
+.stack{display:flex;flex-direction:column;gap:16px}
+.stack-lg{display:flex;flex-direction:column;gap:40px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;min-width:0}
+.btn{border:0;border-radius:12px;padding:13px 20px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--ink);color:var(--bg)}
+.btn.hi{background:var(--hi);color:var(--on-hi)}
+.btn.ghost{background:transparent;border:1.5px solid var(--line)}
+.btn.sm{padding:8px 14px;font-size:.9rem;border-radius:10px}
+.btn.block{width:100%}
+
+/* landing */
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;padding-block:24px 8px}
+@media (max-width:820px){.hero{grid-template-columns:1fr}}
+.hero h1{font-size:clamp(2.4rem,6.4vw,4.2rem);font-weight:700}
+.hero .lede{font-size:1.15rem;color:var(--muted);max-width:52ch}
+.profile-demo{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 60px -40px rgba(20,27,45,.5);transform:rotate(1.2deg)}
+.pd-row{display:grid;grid-template-columns:92px 1fr 44px;gap:10px;align-items:center;font-size:.88rem}
+.bar{height:10px;background:var(--surface-2);border-radius:999px;overflow:hidden;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:999px}
+.sec-h{display:flex;flex-direction:column;gap:8px;max-width:640px}
+.sec-h h2{font-size:clamp(1.7rem,4vw,2.4rem)}
+.track-card{display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+.track-card .ti{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--surface-2)}
+.track-card .ti svg{width:24px;height:24px}
+.track-card h3{font-size:1.2rem}
+.track-card p{font-size:.94rem;color:var(--muted)}
+.steps{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));counter-reset:s}
+.step{border-top:3px solid var(--ink);padding-top:14px;display:flex;flex-direction:column;gap:6px}
+.step .n{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.step h3{font-size:1.15rem}
+.why{background:var(--ink);color:var(--bg);border-radius:20px;padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}
+@media (max-width:760px){.why{grid-template-columns:1fr}}
+.why h2{font-size:clamp(1.5rem,3.6vw,2.1rem)}
+.why .muted{color:color-mix(in srgb,var(--bg) 70%,var(--ink))}
+.gap-viz{display:flex;flex-direction:column;gap:12px;font-size:.9rem}
+.gap-viz .lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem}
+.gap-viz .bar{background:color-mix(in srgb,var(--bg) 18%,var(--ink))}
+footer{border-top:1px solid var(--line);padding-top:20px;font-size:.85rem;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.field .lab{font-weight:700;font-size:.92rem}
+input[type=text]{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;color:var(--ink);width:100%}
+input[type=text]:focus{border-color:var(--ink);outline:none}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:600;text-align:left;display:flex;align-items:center;gap:10px}
+.opt[aria-pressed=true]{border-color:var(--ink);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--ink)}
+.opt .sw{width:12px;height:12px;border-radius:4px;flex:none}
+.opts.col{flex-direction:column}
+.opts.col .opt{width:100%}
+
+/* flow (calibration, lessons) */
+.prog{display:flex;gap:4px}
+.prog i{flex:1;height:5px;border-radius:999px;background:var(--surface-2)}
+.prog i.on{background:var(--ink)}
+.stage-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.q{font-family:var(--display);font-size:clamp(1.3rem,3.6vw,1.65rem);font-weight:600}
+.ans{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:13px 16px;cursor:pointer;text-align:left;font-weight:600;width:100%;display:flex;gap:12px;align-items:center}
+.ans:hover{border-color:var(--muted)}
+.ans[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);background:var(--surface-2)}
+.ans .k{font-family:var(--mono);font-size:.78rem;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:var(--surface-2);flex:none}
+.ans.right{border-color:var(--good);box-shadow:inset 0 0 0 1px var(--good)}
+.ans.wrong{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
+.feedback{font-weight:600;padding:12px 14px;border-radius:12px;background:var(--surface-2)}
+.feedback.good{color:var(--good)}
+.feedback.bad{color:var(--bad)}
+.timer{height:4px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+.timer i{display:block;height:100%;background:var(--muted);width:0;transition:width 1s linear}
+.fmt-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;padding:4px 10px;border-radius:999px;border:1.5px solid currentColor}
+.c-visual{color:var(--vis)}.c-verbal{color:var(--verb)}.c-story{color:var(--story)}.c-doing{color:var(--doing)}
+.bg-visual{background:var(--vis)}.bg-verbal{background:var(--verb)}.bg-story{background:var(--story)}.bg-doing{background:var(--doing)}
+
+/* calibration lessons */
+.prose{font-size:1.12rem;line-height:1.7;max-width:62ch}
+.prose p+p{margin-top:14px}
+.storycard{border-left:4px solid var(--story);padding:6px 0 6px 18px;font-size:1.12rem;line-height:1.75;font-style:italic;max-width:62ch}
+.diagram{overflow-x:auto}
+.diagram svg{min-width:520px;width:100%;height:auto;display:block}
+.diagram text{font-family:var(--body);fill:var(--ink)}
+.cauldron{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.pot{width:110px;height:110px;flex:none}
+.recipe-log{font-family:var(--mono);font-size:.85rem;display:flex;flex-direction:column;gap:4px}
+
+/* results */
+.big-type{font-size:clamp(2.2rem,7vw,3.6rem);font-weight:700}
+.res-bars{display:flex;flex-direction:column;gap:14px}
+.rb{display:grid;grid-template-columns:140px 1fr 52px;gap:12px;align-items:center}
+@media (max-width:480px){.rb{grid-template-columns:96px 1fr 44px;font-size:.88rem}}
+.rb .bar{height:16px}
+.rb .pred{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--ink);border-radius:2px}
+.rb .name{font-weight:700;display:flex;align-items:center;gap:8px}
+.rb .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.compare{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
+.compare .arrow{font-family:var(--mono);color:var(--muted)}
+.compare .box{background:var(--surface-2);border-radius:12px;padding:14px}
+.compare .box.reveal{background:var(--hi);color:var(--on-hi)}
+@media (max-width:520px){.compare{grid-template-columns:1fr}.compare .arrow{transform:rotate(90deg);justify-self:center}}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat .v{font-family:var(--display);font-size:1.45rem;font-weight:700}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:.8rem;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface-2)}
+.plan li{margin-bottom:8px}
+.plan{padding-left:20px;margin:0}
+
+/* app shell */
+.dash-top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.dash-top h1{font-size:clamp(1.8rem,5vw,2.6rem)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:12px}
+.next-card{background:var(--ink);color:var(--bg);border-color:var(--ink);display:flex;flex-direction:column;gap:10px}
+.next-card .muted{color:color-mix(in srgb,var(--bg) 70%,var(--ink))}
+.lesson-list{display:flex;flex-direction:column;gap:6px}
+.li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:0;cursor:pointer;text-align:left;width:100%}
+.li:hover{outline:1.5px solid var(--line)}
+.li .dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);flex:none;display:grid;place-items:center;font-size:.7rem}
+.li.done .dot{background:var(--good);border-color:var(--good);color:#fff}
+.li .t{flex:1;min-width:0;font-weight:600}
+.li .m{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.trackprog{height:6px}
+
+/* lesson */
+.lesson-h{display:flex;flex-direction:column;gap:10px}
+.lesson-h h1{font-size:clamp(1.9rem,5vw,2.8rem)}
+.idea{font-size:1.2rem;font-weight:600}
+.block{display:flex;flex-direction:column;gap:14px}
+.flow{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:22px;counter-reset:f}
+@media (max-width:720px){.flow{grid-template-columns:1fr;gap:18px}}
+.flow li{position:relative;background:var(--surface);border:2px solid var(--vis);border-radius:14px;padding:14px;counter-increment:f}
+.flow li::before{content:counter(f);position:absolute;top:-12px;left:12px;background:var(--vis);color:#fff;font-family:var(--mono);font-size:.75rem;width:24px;height:24px;border-radius:50%;display:grid;place-items:center}
+.flow li:not(:last-child)::after{content:"";position:absolute;right:-18px;top:50%;width:14px;height:2px;background:var(--vis)}
+@media (max-width:720px){.flow li:not(:last-child)::after{right:auto;left:50%;top:auto;bottom:-16px;width:2px;height:14px}}
+.flow b{display:block;font-family:var(--display);font-size:1.05rem}
+.flow span{font-size:.9rem;color:var(--muted)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tab{background:none;border:1.5px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:.9rem;display:inline-flex;gap:8px;align-items:center}
+.tab[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab .sw{width:9px;height:9px;border-radius:3px}
+.order-pool{display:flex;flex-wrap:wrap;gap:8px}
+.order-done{display:flex;flex-direction:column;gap:6px;min-height:44px}
+.order-done .slot{background:var(--surface-2);border-radius:10px;padding:9px 12px;font-weight:600;display:flex;gap:10px}
+.order-done .slot .mono{color:var(--doing)}
+.doit{background:color-mix(in srgb,var(--doing) 12%,var(--surface));border-radius:12px;padding:14px 16px;font-weight:600}
+.lead-note{font-size:.88rem;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;font-size:.9rem;z-index:20;max-width:calc(100% - 32px);text-align:center}
+.viz-frame{width:100%;height:900px;border:0;border-radius:12px;background:#07080b;display:block}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-logo" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="var(--ink)"/><path d="M9 20.5a5 5 0 1 1 7-4.6 5 5 0 1 0 7-4.6" fill="none" stroke="var(--hi)" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="6" height="6" rx="1.5"/><rect x="16" y="3" width="6" height="6" rx="1.5"/><rect x="16" y="15" width="6" height="6" rx="1.5"/><path d="M8 12h4m0-6v12m0-12h4m-4 12h4"/></g></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></g></symbol>
+  <symbol id="i-agent" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/><circle cx="12" cy="12" r="2.5"/></g></symbol>
+  <symbol id="i-talk" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></g></symbol>
+  <symbol id="i-harness" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="8" height="8" rx="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5L19 19M19 5l-2.5 2.5M7.5 16.5L5 19"/></g></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-brain" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V6a2 2 0 0 0-3-2z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/><path d="M12 9h2M12 14h3"/></g></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 7l3 3M4 20h16"/></g></symbol>
+</svg>
+
+<header class="nav"><div class="nav-in" id="nav"></div></header>
+<main id="app"></main>
+<div class="toast" id="toast" hidden aria-live="polite"></div>
+<script>
+/* ================= CONTENT ================= */
+const FORMATS={
+  visual:{name:"Diagrams",verb:"seeing it mapped out",lead:"a diagram"},
+  verbal:{name:"Reading",verb:"reading a clear explanation",lead:"a written explanation"},
+  story:{name:"Stories",verb:"hearing a real example",lead:"a real-world story"},
+  doing:{name:"Hands-on",verb:"trying it yourself",lead:"a hands-on exercise"}
+};
+const FKEYS=["visual","verbal","story","doing"];
+
+const TRACKS=[
+{id:"n8n",icon:"i-flow",color:"var(--doing)",title:"AI Automation with n8n",blurb:"Build workflows that run your repetitive work, then add AI agents to them.",lessons:[
+{id:"n8n1",title:"Your first workflow",mins:6,idea:"Every automation is a trigger followed by actions.",
+ text:["n8n is a visual tool for connecting apps so work happens without you. You build a workflow out of nodes: boxes that each do one job, joined by lines that pass data from one to the next.","Every workflow starts with a trigger node. A trigger is the event that starts a run: a form is submitted, an email arrives, or a schedule fires at 9am. After the trigger come action nodes, which read, change or send data.","Each time a workflow runs, n8n saves an execution you can open to see exactly what went in and out of every node. Executions are your main debugging tool."],
+ steps:[["Trigger","Something happens: a form, an email, a schedule"],["Get data","Read the details from that event"],["Transform","Clean up or reshape the fields"],["Act","Send, save or notify"]],
+ story:"Maya runs a small bakery. Every time someone filled in her catering form, she copied the details into a spreadsheet and texted her assistant. Her first n8n workflow does it for her: a Form trigger, a Google Sheets node that adds a row, and a Telegram node that messages the assistant. It took 20 minutes to build and saves her about an hour a week.",
+ doit:"Pick one task you repeat every week. Write down its trigger and the 2–3 actions that follow. That's your first workflow.",
+ quiz:[["What starts every n8n workflow?","A trigger node","An AI model","A spreadsheet","A paid add-on"],["Where do you see what data passed through each node on a past run?","The executions list","The credentials page","The template gallery","The node's color"],["What is a node?","A box that does one job in a workflow","A saved password","A type of server","A paid plugin"]]},
+{id:"n8n2",title:"Moving data between nodes",mins:7,idea:"Data flows as items, and expressions pick out the fields you need.",
+ text:["Data moves through n8n as a list of items. Each item is a small JSON object, like { \"name\": \"Maya\", \"email\": \"maya@bakery.com\" }. If a node receives five items, it usually runs its action five times, once per item.","To use a field from an earlier node, write an expression inside double curly braces. {{ $json.email }} means \"the email field of the current item.\" You can also drag fields in from the input panel instead of typing them.","Logins for apps like Gmail or Slack are saved once as credentials. Nodes reuse them, so you never paste passwords into a workflow."],
+ steps:[["Item arrives","{ name, email }"],["Expression","{{ $json.email }} picks one field"],["Node acts","Uses that value, e.g. sends to that address"],["Repeat","Runs again for every item"]],
+ story:"Jon's workflow pulls 40 new leads from a sheet. He added one Gmail node with the To field set to {{ $json.email }} and the greeting set to \"Hi {{ $json.firstName }}\". n8n sent 40 personal emails, because the node ran once per item.",
+ doit:"Open any JSON you have (an export or API response). Write the expression that would pull out one field, like {{ $json.city }}.",
+ quiz:[["A node receives 5 items. How many times does its action usually run?","5","1","0 until you approve it","It depends on the credentials"],["What does {{ $json.email }} return?","The email field of the current item","Every email in your inbox","The node's settings","An error"],["Where should app logins live?","In saved credentials","Typed into each node","In the workflow name","Inside an expression"]]},
+{id:"n8n3",title:"Adding AI to a workflow",mins:8,idea:"An AI Agent node is a model that can call tools to finish a task.",
+ text:["n8n's AI Agent node connects a chat model to tools it's allowed to use, such as searching a sheet, sending an email or calling an API. You set its job in a system message, and it decides which tools to call.","Add memory if the agent needs to remember earlier messages in a conversation. Without memory, every run starts fresh.","Start narrow: one clear job and two or three tools. Have it draft rather than send, and keep a human approval step until you trust the results."],
+ steps:[["Trigger","A message or event arrives"],["Instructions","The system message sets the job"],["Tools","It looks things up, calculates, drafts"],["Approve","A person checks before it's sent"]],
+ story:"Priya's agent reads incoming support emails, looks up the customer's order in a sheet, and drafts a reply. Drafts land in a Slack channel where she approves them with one click. After a month of approvals with no edits, she let it send order-status replies on its own.",
+ doit:"Write a one-sentence job description for an agent and list the tools it would need. Cross out any tool it doesn't strictly need.",
+ quiz:[["What does an agent need in order to take actions beyond writing text?","Tools","More triggers","A longer prompt","A bigger model"],["What does adding memory give an agent?","It remembers earlier messages in the conversation","It runs faster","It stores passwords","It approves its own drafts"],["What's the safest way to launch a new agent?","Let it draft and have a person approve","Give it every tool available","Let it send right away","Skip testing to save time"]]}
+]},
+{id:"zapier",icon:"i-zap",color:"var(--story)",title:"Automation with Zapier",blurb:"Connect your apps without code and let routine work run itself.",lessons:[
+{id:"zp1",title:"Your first Zap",mins:6,idea:"A Zap is one trigger plus the actions it sets off across your apps.",
+ text:["Zapier connects thousands of apps without any code. An automated workflow in Zapier is called a Zap. Every Zap has one trigger, an event in an app like \"new form response\" or \"new email\", followed by one or more actions, like \"add a row\" or \"send a message\".","When you set up an action, you map fields: you tell Zapier which piece of data from the trigger goes where, such as putting the form's Email answer into the email's To field. Testing the trigger first pulls in sample data so you can see what you're mapping.","Zapier counts each successful action as a task, and plans are based on how many tasks you use, so check your plan's limits. When something goes wrong, open Zap history to see every run, the data it carried and any error."],
+ steps:[["Trigger","Pick the app and event"],["Test","Pull in sample data"],["Action","Choose the app and map fields"],["Turn on","Watch Zap history"]],
+ story:"Leah is a real-estate agent. Leads from her website form used to sit in her inbox for hours. Her first Zap adds each new lead to a Google Sheet, texts her the name and number, and sends the lead a friendly welcome email. She now replies within minutes, and she's booking noticeably more viewings.",
+ doit:"Pick two apps you use every day. Write one trigger in the first and one action in the second that would save you time.",
+ quiz:[["What is a Zap?","A trigger plus one or more actions","A type of app","A paid add-on","A saved password"],["What does mapping fields mean?","Choosing which trigger data goes into each action field","Drawing a diagram of your apps","Renaming your Zap","Picking a plan"],["A Zap failed yesterday. Where do you look?","Zap history","Your app store","The template gallery","Your billing page"]]},
+{id:"zp2",title:"Filters, paths and formatting",mins:6,idea:"Make a Zap smarter: run only when it matters, branch by case, and clean the data.",
+ text:["A filter lets a Zap continue only when a condition is true, like \"deal value is greater than 1,000\" or \"email contains invoice\". Everything else stops quietly, which also saves tasks.","Paths split a Zap into branches, so different cases get different actions. Think of it as if-this-then-that inside one Zap: VIP customers go one way, everyone else another.","Formatter steps clean data before you use it: fix capital letters in names, change date formats, split a full name into first and last, or do simple maths. Clean data is what makes automated messages look human."],
+ steps:[["Filter","Only continue if…"],["Paths","Branch by case"],["Format","Clean names, dates, numbers"],["Act","Do the right thing for each case"]],
+ story:"An online shop sends every order through one Zap. A path checks the total: orders over $200 post to a VIP Slack channel and create a task to write a thank-you note, while the rest get the standard email. A Formatter step capitalises names first, so no customer gets \"Hi jOHN\" again.",
+ doit:"Take a Zap idea and add one filter that would stop it from running when it shouldn't.",
+ quiz:[["What does a filter do?","Lets the Zap continue only when a condition is true","Deletes old data","Speeds up the Zap","Hides the Zap from others"],["When do you need paths?","When different cases need different actions","When you have only one action","To rename fields","To pay less"],["What is a Formatter step for?","Cleaning data like names, dates and numbers","Choosing your plan","Designing emails","Adding team members"]]},
+{id:"zp3",title:"Zapier vs n8n, and adding AI",mins:7,idea:"Pick the right tool for the job, then add AI steps carefully.",
+ text:["Zapier is the fastest way to start: a huge app library, nothing to host, and a simple builder, priced by tasks. It suits non-technical teams and quick wins. n8n gives more control, can be self-hosted, and is friendlier to code, which can make it cheaper at high volume. Many automation pros use both.","You can add AI steps to a Zap, using Zapier's built-in AI steps or the ChatGPT and Claude integrations, to summarise, classify or draft text. Give the AI step one narrow job and clear instructions.","Test AI steps with real examples before turning the Zap on, and keep a person reviewing anything that goes to customers until the results are consistently right."],
+ steps:[["Choose","Zapier for speed, n8n for control"],["One AI job","Summarise, classify or draft"],["Test","Run real samples first"],["Review","A person checks before it's sent"]],
+ story:"A support team added an AI step that sorts every incoming email into billing, bug or sales, then uses paths to send each one to the right person. Each week they check Zap history for mis-sorted emails and tighten the AI step's instructions. Within a month almost nothing landed in the wrong place.",
+ doit:"Name one Zap you'd build and one place an AI step could help. Write the AI step's instructions in two sentences.",
+ quiz:[["When is Zapier usually the better pick?","When you want to start fast without hosting anything","When you must self-host","When you want to write lots of code","Never"],["What's a good first job for an AI step?","One narrow task like classifying emails","Running your whole business","Replacing every action","Approving its own work"],["Why keep a person reviewing AI output at first?","To catch mistakes before customers see them","Zapier requires it","It makes the Zap faster","To use fewer tasks"]]}
+]},
+{id:"prompt",icon:"i-chat",color:"var(--vis)",title:"Prompting Mastery",blurb:"Get reliably great results from ChatGPT, Claude and other assistants.",lessons:[
+{id:"pr1",title:"The anatomy of a strong prompt",mins:6,idea:"Context, task, constraints and format turn a vague ask into a useful answer.",
+ text:["AI assistants don't know your situation unless you tell them. The single biggest upgrade is context: who you are, who the output is for, and why you need it.","Then state the task as one clear instruction, add constraints (length, tone, what to avoid), and say what format you want back, such as a table, a bullet list or an email.","If you have an example of what good looks like, paste it in. One good example often does more than a paragraph of description."],
+ steps:[["Context","Who you are, who it's for"],["Task","One clear instruction"],["Constraints","Length, tone, what to avoid"],["Format","Table, list, email…"]],
+ story:"Weak: \"Write a LinkedIn post about my new job.\" Strong: \"I'm a nurse moving into healthcare data analysis. Write a 120-word LinkedIn post announcing my new role on a hospital analytics team. Warm, not boastful, no hashtags, and end by thanking my old ward.\" The second one gets a usable draft on the first try.",
+ doit:"Take a prompt you used recently and rewrite it with all four parts. Compare the two answers.",
+ quiz:[["What's usually the biggest single improvement to a prompt?","Context about you and the audience","Saying please","Writing in all caps","Making it shorter"],["Which of these is a constraint?","\"Under 150 words, no jargon\"","\"I'm a teacher\"","\"Write an email\"","\"Here's an example\""],["Why paste an example of good output?","It shows the target faster than describing it","It's required","It makes the model faster","It hides your data"]]},
+{id:"pr2",title:"Iterate like an editor",mins:6,idea:"Treat the first answer as a draft, then steer it.",
+ text:["Great results rarely come from one prompt. Get a draft, then react to it: \"shorter,\" \"more concrete,\" \"point two is wrong because…\". Specific feedback beats starting over.","For bigger tasks, split the work. Ask for an outline first, approve it, then have each section written. You catch problems while they're still cheap to fix.","You can also flip roles: \"Before you start, ask me any questions you need answered.\" The assistant will often surface details you forgot to give."],
+ steps:[["Draft","Get a first version"],["React","Say exactly what to change"],["Split","Outline first on big tasks"],["Ask-back","Let it question you"]],
+ story:"Leo needed a 10-slide pitch outline. Instead of asking for everything at once, he asked for five possible storylines, picked one, asked for slide titles, cut two, then had each slide drafted. It took 25 minutes, and every slide fit his story.",
+ doit:"Start your next request with: \"Ask me up to 5 questions before you begin.\" Notice what it asks.",
+ quiz:[["The first answer is close but too long. Best next step?","Ask it to shorten and say what to keep","Start a new chat","Use it anyway","Send the same prompt again"],["Why outline first on big tasks?","You catch problems while they're cheap to fix","It uses fewer words","The model requires it","It turns on memory"],["What does \"ask me questions first\" do?","Surfaces details you forgot to give","Makes answers shorter","Turns off memory","Speeds up the reply"]]},
+{id:"pr3",title:"Trust, but verify",mins:5,idea:"AI can sound confident and still be wrong, so check what matters.",
+ text:["Language models predict likely text. Most of the time that produces accurate answers, but they can also invent facts, quotes, statistics or sources that look real. This is called a hallucination.","Check anything you'll act on or publish: numbers, names, legal or medical claims, and citations. Ask for sources, then open the sources yourself.","Be careful with sensitive information. Don't paste passwords, client secrets or private data into a tool unless your workplace has approved it for that."],
+ steps:[["Generate","Get the answer"],["Flag","Mark facts, numbers, sources"],["Check","Verify against a real source"],["Protect","Keep secrets out"]],
+ story:"A marketing team asked an assistant for statistics for a blog post. Two of the five numbers came with sources that didn't exist. Their new rule: every number in a published post needs a link a person has actually opened.",
+ doit:"Ask an assistant about something you know in depth. Look for anything it got subtly wrong.",
+ quiz:[["What is a hallucination?","A confident answer that's made up","A slow response","A formatting error","A refused request"],["What should you always verify before publishing?","Numbers, names and sources","The font","How long it took","Nothing, if it sounds confident"],["Which is the safest habit?","Keep passwords and private client data out","Paste passwords to save time","Share customer records freely","Upload contracts to any tool"]]}
+]},
+{id:"agents",icon:"i-agent",color:"var(--verb)",title:"AI Agents",blurb:"Understand, design and sell AI agents that do real work.",lessons:[
+{id:"ag1",title:"What makes something an agent",mins:6,idea:"An agent is a model working in a loop: decide, use a tool, check, repeat.",
+ text:["A chatbot answers. A workflow follows fixed steps. An agent pursues a goal: it decides what to do next, uses a tool to do it, looks at the result, and repeats until the job is done or it needs help.","Every agent has four parts: a model that reasons, instructions that define its job, tools it can call, and a loop that lets it act more than once.","Use an agent when the steps change from case to case. If the steps are always the same, a plain workflow is cheaper and more reliable."],
+ steps:[["Goal","What done looks like"],["Decide","The model picks the next step"],["Act","It calls a tool"],["Check","Reads the result, loops or stops"]],
+ story:"A travel agent gets \"find me a hotel in Lisbon under €150 near the river for next weekend.\" It searches, filters by price, checks a map tool for distance, finds nothing under budget, widens the area a little, and comes back with three options and a note about the trade-off.",
+ doit:"List three tasks from your work. Mark each \"same steps every time\" (workflow) or \"steps change\" (agent).",
+ quiz:[["What separates an agent from a chatbot?","It acts in a loop toward a goal using tools","It's newer","It has a name","It types faster"],["When is a plain workflow the better choice?","When the steps are always the same","When the task is complex","Never","When you have more tools"],["Which is NOT one of an agent's core parts?","A logo","A model","Tools","Instructions"]]},
+{id:"ag2",title:"Designing a reliable agent",mins:7,idea:"A narrow job, few tools, clear limits, and a test set.",
+ text:["Write the job description like you would for a new hire: what it does, what it never does, and when to hand off to a person.","Give it the fewest tools that can do the job, and describe each one clearly. Vague tool descriptions are a top cause of agents doing the wrong thing.","Before launch, build a small test set: about 20 real examples with the right outcome. Rerun it after every change so you know whether the agent got better or worse."],
+ steps:[["Job","What it does and never does"],["Tools","Fewest needed, clearly described"],["Guardrails","Limits and hand-off rules"],["Test set","20 real cases, rerun after changes"]],
+ story:"An agency built a lead-qualifying agent with nine tools. It kept emailing leads it was only meant to score. They cut it to three tools, wrote \"never contact a lead\" into its instructions, and tested it on 20 past leads. Accuracy went from 60% to 90%.",
+ doit:"Write a three-line job description for an agent: what it does, what it never does, when it hands off.",
+ quiz:[["What's a top cause of agents misbehaving?","Vague tool descriptions","Short names","Too few colors","Fast servers"],["Why keep a test set?","To see whether changes make it better or worse","To train the model","For marketing","It's legally required"],["How many tools should an agent have?","The fewest that can do the job","As many as possible","Exactly ten","None"]]},
+{id:"ag3",title:"Turning agents into income",mins:7,idea:"Sell an outcome for a painful, repeated task in one niche.",
+ text:["Businesses don't buy agents; they buy results: fewer hours on admin, faster replies, more booked calls. Look for a task that's repeated often, follows rules, and costs someone real time.","Pick one niche, like dental clinics or real-estate agents, so you can reuse what you build and speak their language. Offer a short paid pilot with a measurable target.","Price on the value of the outcome, not your hours, and include monthly upkeep. Agents need monitoring and fixes when the apps they connect to change."],
+ steps:[["Find pain","Repeated, rule-based, costly task"],["Niche","One industry you learn deeply"],["Pilot","Short, paid, measurable"],["Retain","Monthly upkeep and reporting"]],
+ story:"Sam noticed physiotherapy clinics lose hours confirming appointments by phone. He built an agent that texts patients, handles reschedules and updates the calendar. A 30-day paid pilot at one clinic cut no-shows by a quarter, and he used that result to sign four more clinics on a setup fee plus a monthly fee.",
+ doit:"Name one niche you know and one task in it that eats hours every week. That's a pilot idea.",
+ quiz:[["What do businesses actually pay for?","A measurable result","The word \"AI\"","Your hours","The number of tools"],["Why focus on a single niche?","You reuse your build and speak their language","Hosting is cheaper","Agents only work in one industry","To avoid taxes"],["Why charge a monthly fee?","Agents need monitoring and fixes as apps change","It's traditional","Clients prefer it","To pay for branding"]]}
+]},
+{id:"harness",icon:"i-harness",color:"var(--story)",title:"Harness Engineering",blurb:"Make AI agents reliable by engineering everything around the model.",lessons:[
+{id:"he1",title:"The model is the engine, the harness is the car",mins:6,idea:"Most agent failures are harness problems, not model problems.",
+ text:["An AI agent is a model plus everything wrapped around it: the instructions it gets, the tools it can call, the loop that lets it act more than once, what it can see at each step, and the checks on what it does. That wrapper is the harness.","Harness engineering means designing that wrapper on purpose. When an agent fails, the cause is usually something the harness controls: unclear instructions, a confusing tool, missing information, or no check before a risky action. Swapping in a bigger model rarely fixes those.","The upside is practical. You can make an agent far more reliable without waiting for a better model, by improving the parts you control and measuring whether each change actually helped."],
+ steps:[["Instructions","The job and the rules"],["Tools","What it can do, clearly described"],["Loop + context","How it acts and what it sees each step"],["Checks","Guardrails, tests and logs"]],
+ story:"A team's support agent kept refunding orders it should have escalated. They tried a newer model and it still happened. Reading the logs, they found the refund tool was described as \"use for order problems,\" which covered almost everything. They described exactly when to use it and added an approval step for refunds over $50. Wrong refunds dropped to near zero on the same model.",
+ doit:"Think of an AI tool that frustrated you recently. Write down which harness part caused it: instructions, tools, context, the loop, or checks.",
+ quiz:[["What is the harness?","Everything around the model that turns it into an agent","The model's training data","The chat window","The API key"],["An agent keeps misusing a tool. What should you check first?","The tool's name and description","Whether a bigger model exists","The prompt's formatting","Where the server is located"],["Why is harness engineering useful?","It improves reliability without needing a new model","It makes models free to run","It removes the need for testing","It retrains the model on your data"]]},
+{id:"he2",title:"Tools and context",mins:7,idea:"Give the agent a few clear tools and only the information it needs right now.",
+ text:["Tools are how an agent acts: search, read a file, query a database, send a message. The model picks tools mostly from their names, descriptions and parameters, so write those like instructions for a new colleague: what it does, when to use it, when not to, and what it returns.","Context is everything the model sees on a given step: instructions, conversation, tool results, files. More isn't better. Long, cluttered context buries what matters and costs more. Keep tool outputs short, summarise old steps, and load details only when they're needed.","Make tool errors useful. \"Order not found: order numbers have 8 digits\" lets the agent fix its mistake. A bare \"Error 500\" makes it guess."],
+ steps:[["Few tools","Only what the job needs"],["Clear descriptions","What, when, when not, returns"],["Lean context","Short outputs, summarise old steps"],["Helpful errors","What went wrong and how to fix it"]],
+ story:"A research agent kept running out of room halfway through long tasks, because every web page it read was pasted in whole. The team changed the fetch tool to return a 300-word summary plus the link, with an option to read one section in full. More tasks finished, and each run cost about a third as much.",
+ doit:"Pick one tool an agent might use, like \"send email\". Describe it in four lines: what it does, when to use it, when not to, and what it returns.",
+ quiz:[["How does a model mostly decide which tool to call?","From the tool's name, description and parameters","At random","By the order the tools were added","From the user's location"],["Why keep context lean?","Clutter buries what matters and costs more","Models can't read long text at all","It's legally required","It makes answers longer"],["Which tool error helps an agent recover?","\"Order not found: order numbers have 8 digits\"","\"Error 500\"","\"Something went wrong\"","No message at all"]]},
+{id:"he3",title:"Loops, limits and handoffs",mins:8,viz:"agent-graph",idea:"Decide how the agent keeps going, when it must stop, and when a person takes over.",
+ text:["The loop is the agent's heartbeat: think, act, look at the result, repeat. The harness decides how the loop ends: when the goal is met, when a step, time or spending limit runs out, or when the agent is stuck.","Put guardrails around risky actions. Read-only actions can run freely. Actions that spend money, delete data or contact people should need permission or a person's approval. Enforce limits in code, not only in the prompt, because a prompt can be ignored.","Plan the handoff. When the agent is unsure, out of its depth or out of budget, it should stop and pass a clear summary to a person instead of guessing."],
+ steps:[["Loop","Think, act, check, repeat"],["Limits","Max steps, time and spend"],["Gates","Approval for money, deletes, messages"],["Handoff","Stop and summarise for a person"]],
+ story:"A coding agent was allowed to run any terminal command. One night it got stuck retrying a failing test hundreds of times and ran up a large bill. The team added a 30-step limit, blocked file deletion unless a person approved it, and had the agent post a summary to Slack whenever it stopped. The next stuck run ended after 30 steps with a clear note of what it had tried.",
+ doit:"For an agent you'd like to build, list its actions and mark each one: runs freely, needs approval, or never allowed.",
+ quiz:[["Where should hard limits like \"never delete files\" live?","In code the agent can't bypass","Only in the prompt","In the agent's memory","In the user manual"],["Which action most needs a person's approval?","Issuing a refund","Reading a help article","Searching the web","Summarising a document"],["What should an agent do when it's stuck?","Stop and hand off a clear summary","Keep retrying until it works","Guess an answer","Delete its progress and restart"]]},
+{id:"he4",title:"Evals: proving a change helped",mins:7,idea:"Without tests, every change to a harness is a guess.",
+ text:["An eval set is a collection of real tasks with known good outcomes. Run the agent on all of them after every change to the prompt, tools or model, and compare the score with the last run.","Start small: 20 to 50 cases from real use, including the tricky ones that failed before. Grade with simple code checks where you can (right tool called, valid format, correct number), and use a person or a second model for fuzzier qualities like tone.","Log every real run: inputs, tool calls, outputs, cost and time. Logs reveal new kinds of failure, and each one becomes a new eval case, so the harness keeps improving."],
+ steps:[["Collect","Real tasks, including past failures"],["Run","The whole set after every change"],["Grade","Code checks first, then human or model review"],["Log + add","New failures become new cases"]],
+ story:"A team rewrote their agent's prompt. It felt better in a quick demo, so they shipped it, and a week later complaints rose. When they finally built a 40-case eval set, the new prompt scored 71% against the old prompt's 84%. Now no prompt change ships unless it matches or beats the last score.",
+ doit:"Write down five real tasks an AI tool you use should handle, and what a correct result looks like for each. That's the start of an eval set.",
+ quiz:[["What is an eval set?","Real tasks with known good outcomes, rerun after changes","A list of available models","The agent's memory","A billing report"],["When should you run your evals?","After every change to the prompt, tools or model","Once, at launch","Only when customers complain","Never; demos are enough"],["Where do good new eval cases come from?","Failures found in your run logs","Random internet text","The model's training data","Marketing ideas"]]}
+]},
+{id:"brain",icon:"i-brain",color:"var(--verb)",title:"Build a Second Brain with AI",blurb:"Capture what you learn and let AI help you find and use it.",lessons:[
+{id:"sb1",title:"What a second brain really is",mins:6,idea:"A trusted place outside your head, plus AI that can search and use it.",
+ text:["A second brain is a system for capturing and organising what you learn, decide and come across, so you can find and use it later instead of trying to remember everything. The idea was popularised by productivity writer Tiago Forte.","AI makes it far more useful. It can search your notes by meaning, summarise them, connect ideas across them, and draft new work from them. But Claude doesn't build a memory of you on its own. It only knows what you give it: files you share, a Project's knowledge, or notes you connect.","So the \"brain\" is really two things: your notes, and the routine that keeps them current and lets AI use them. Messy or missing notes in means vague answers out."],
+ steps:[["Capture","Save what's useful, fast"],["Organise","File it where you'll act on it"],["Distill","Pull out the key points"],["Express","Use it to make something"]],
+ story:"Priya, a freelance designer, had client feedback scattered across email and Slack and kept repeating mistakes. She moved notes into one folder per client and added them to a Claude Project. Before each call she asks, \"What did this client dislike last time, and what did we agree?\" Claude answers and names the note it came from.",
+ doit:"List every place your notes live today: apps, email, paper, screenshots. Pick one to be the single home from now on.",
+ quiz:[["What is a second brain?","A system that holds your notes so you can find and use them later","A brain implant","A bigger AI model","A backup of your phone"],["Does Claude remember everything you've ever told it on its own?","No. It only knows what's in the conversation, a Project or connected notes","Yes, forever","Only on weekends","Only if you pay more"],["What do the four steps Capture, Organise, Distill, Express describe?","How notes flow from saving to using them","Four AI models","A filing cabinet brand","A meeting agenda"]]},
+{id:"sb2",title:"Capture and organise so AI can find it",mins:7,idea:"Capture quickly, file simply, and write notes a machine can read.",
+ text:["Capture fast, into one inbox: a notes app, a voice memo, or an email to yourself. Save only what's useful or surprising, and add one line on why you saved it.","Organise by what you're working on, not by topic. Forte's PARA method uses four folders: Projects (active, with a deadline), Areas (ongoing responsibilities like health or finances), Resources (topics you're interested in) and Archives (finished or inactive).","Make notes easy for AI to use: a clear title with a date, plain text instead of screenshots of text, one idea or clear headings per note, and decisions written out plainly, like \"Decision: we're charging $2,000 because…\"."],
+ steps:[["Inbox","One place to capture"],["Sort","File weekly into PARA"],["Title","Clear name plus a date"],["Decide","Write decisions out plainly"]],
+ story:"Marco's notes were 600 untitled files. He spent one afternoon archiving anything over a year old, making folders for four active projects and three areas, and renaming key notes like \"2026-09 Client X – pricing decision\". Now when he asks Claude what he decided on Client X's pricing, it finds the right note straight away instead of guessing.",
+ doit:"Rename five of your most important notes so each has a date and a title that says what's in it.",
+ quiz:[["What does PARA stand for?","Projects, Areas, Resources, Archives","Plan, Act, Review, Adjust","People, Apps, Reports, Alerts","Pages, Audio, Recordings, Attachments"],["How should you organise notes?","By what you're actively working on","Alphabetically","By color","By file size"],["Which note is easiest for AI to use?","\"2026-09 Client X – pricing decision\" in plain text","A screenshot named IMG_4471","An untitled note","A blurry photo of a whiteboard"]]},
+{id:"sb3",title:"Connect Claude and make it a habit",mins:7,idea:"Give Claude access to your notes, then use it in a weekly loop.",
+ text:["There are a few ways to connect Claude to your notes. You can put key documents in a Claude Project with instructions, connect apps like Notion or Google Drive through Claude's connectors, or give it access to a notes folder on your computer. Start with read-only access, and leave out passwords and other people's private data.","Ask questions that make it show its work: \"What did I decide about X, and why? Name the note.\" \"Summarise what I captured this week in five points.\" \"Draft a post from my notes on Y.\" Asking for the source lets you check the answer.","The habit is what makes it a brain. Once a week, spend 30 minutes: empty your inbox, file new notes, ask Claude for your open loops and promises, and archive finished projects."],
+ steps:[["Connect","Start with read-only access"],["Ask","Request answers with sources"],["Review","30 minutes, once a week"],["Prune","Archive what's finished"]],
+ story:"Jordan connected his work documents to Claude and blocked 30 minutes every Friday. He asks, \"What did I start this week that isn't finished, and what did I promise people?\" Claude lists the open loops and the notes they came from. He says his Mondays went from foggy to planned.",
+ doit:"Put a 30-minute weekly review in your calendar and write the three questions you'll ask Claude each time.",
+ quiz:[["What's the safest way to start connecting your notes?","Read-only access to the notes you choose","Full access to everything","Sharing your passwords","Uploading other people's private files"],["Why ask Claude to name the note it used?","So you can check the answer against the source","It makes the answer longer","It's required","It saves storage"],["What keeps a second brain useful over time?","A regular weekly review","Buying more apps","Never deleting anything","Saving every web page you see"]]}
+]},
+{id:"comm",icon:"i-talk",color:"var(--story)",title:"Communication Mastery",blurb:"Speak clearly and confidently, and make people feel heard.",lessons:[
+{id:"cm1",title:"Lead with the point",mins:5,idea:"Say your main point first, then support it.",
+ text:["Listeners decide quickly whether to keep paying attention. If you build up slowly, many will drift before you reach your point. Lead with the conclusion.","A simple structure is PREP: Point, Reason, Example, Point. State it, say why, give one concrete example, then restate it in a line.","It works in meetings, interviews and messages. It can feel abrupt at first, but people hear it as confident and clear."],
+ steps:[["Point","Your message in one line"],["Reason","Why it's true or matters"],["Example","One concrete case"],["Point","Restate it briefly"]],
+ story:"Asked \"Should we hire a second designer?\", Dana used to walk through two minutes of workload history. Now she says: \"Yes. We're turning down two projects a month; last month that was $18k. A second designer pays for herself, so yes, let's hire.\"",
+ doit:"Before your next meeting, write your main point as one sentence you could say in ten seconds.",
+ quiz:[["What does the first P in PREP stand for?","Point","Pause","Preview","Problem"],["Why lead with your conclusion?","Listeners drift before a slow build-up gets there","It's more polite","It sounds formal","It's always shorter"],["What comes right after the Reason?","A concrete example","The point again","A question","A joke"]]},
+{id:"cm2",title:"How you sound",mins:5,idea:"Slow down, pause on purpose, and let silence work.",
+ text:["Nervous speakers rush. Slowing down a little makes you easier to follow and makes you sound more sure of yourself.","Replace filler words like \"um\" and \"like\" with a short pause. A one- or two-second silence feels long to you but sounds thoughtful to listeners.","Hold eye contact for one full thought before moving to another person. End statements with a falling tone; a rising tone makes them sound like questions."],
+ steps:[["Slow","A bit slower than feels natural"],["Pause","Silence instead of filler"],["Eye contact","One thought per person"],["Land it","Falling tone at the end"]],
+ story:"Marcus recorded a 60-second pitch and counted 14 \"ums.\" He practised the same pitch pausing at every comma. By the third take he was down to 2, and his manager said he sounded \"much more senior.\"",
+ doit:"Record yourself explaining your job in 60 seconds. Count the filler words, then try again with pauses.",
+ quiz:[["What should replace filler words?","A short pause","Faster speech","A louder voice","A joke"],["How long should you hold eye contact with one person?","About one full thought","One second","The whole talk","Avoid it"],["What does a rising tone at the end of a statement do?","Makes it sound like a question","Sounds more confident","Nothing","Speeds you up"]]},
+{id:"cm3",title:"Make people feel heard",mins:6,idea:"Connection comes from listening well, not talking well.",
+ text:["People remember how a conversation made them feel. The fastest route to connection is being interested: ask about them, and actually listen to the answer.","Ask follow-up questions that use their words: \"You said the move was hard. What was the hardest part?\" It proves you were listening.","Before disagreeing or giving advice, summarise what you heard: \"So the real issue is the deadline, not the budget?\" People relax once they feel understood."],
+ steps:[["Ask","Open questions about them"],["Listen","Don't plan your reply"],["Follow up","Use their own words"],["Summarise","Check you understood"]],
+ story:"At a networking event, Aisha stopped pitching and started asking, \"What are you working on that you're excited about?\" She followed up on details and summarised before sharing anything about herself. Three people asked for her card that night, more than at her previous five events combined.",
+ doit:"In your next conversation, ask at least two follow-up questions using the other person's exact words.",
+ quiz:[["What makes a follow-up question show you listened?","It uses their own words","It's long","It changes the topic","It's about you"],["When should you summarise what you heard?","Before disagreeing or giving advice","Only at the very end","Never","Instead of listening"],["What do people remember most about a conversation?","How it made them feel","Your job title","Your exact words","How long it lasted"]]}
+]},
+{id:"copy",icon:"i-pen",color:"var(--vis)",title:"Copywriting Blueprint",blurb:"Write words that sell, and turn that skill into income.",lessons:[
+{id:"cp1",title:"Write to one reader",mins:6,idea:"Know exactly who you're writing to and what's bothering them.",
+ text:["Copywriting is writing that gets someone to act: buy, sign up, reply. It starts before you write a word, with research on one specific reader.","Find their pain (what's going wrong), their desire (what they want instead), and how aware they are of solutions. Read reviews, forums and comments to collect the exact words they use.","Then write as if you're talking to that one person. \"You\" beats \"our customers,\" and their words beat yours."],
+ steps:[["Reader","One specific person"],["Pain","What's going wrong for them"],["Desire","What they want instead"],["Their words","Borrow phrases from reviews"]],
+ story:"A meal-kit startup's ads said \"nutritious, chef-designed meals,\" and sales were flat. The copywriter read 200 reviews and kept seeing \"I'm too tired to think about dinner.\" The new headline, \"Dinner, decided. Ready in 20 minutes,\" doubled click-throughs.",
+ doit:"Find 10 reviews of a product you like. Copy out the three phrases customers use most.",
+ quiz:[["Where's a great place to find your reader's exact words?","Reviews, forums and comments","A thesaurus","Your own head","Competitors' logos"],["Which is the reader's desire?","What they want instead of their problem","Your product's features","Your price","Your brand colors"],["Who should your copy speak to?","One specific reader","Everyone at once","Your boss","Search engines"]]},
+{id:"cp2",title:"Headlines and structure",mins:6,idea:"A specific headline earns attention; a simple structure earns the action.",
+ text:["Most people read the headline and nothing else, so it has to carry the main benefit. Specific beats clever: \"Cut your grocery bill by $60 a month\" beats \"Smarter shopping.\"","For the body, use a proven structure. PAS is a good start: Problem (name the pain), Agitate (show what it's costing them), Solution (your offer and the one action to take).","Ask for one action only. Every extra link or choice lowers the number of people who do anything."],
+ steps:[["Headline","A specific benefit"],["Problem","Name the pain"],["Agitate","Show what it costs"],["Solution","Offer + one clear action"]],
+ story:"A freelance bookkeeper's page said \"Professional bookkeeping services.\" She changed it to \"Stop losing weekends to receipts. Your books, done monthly, for $199.\" Below it: the problem, what tax season cost clients last year, and one button: \"Book a 15-minute call.\" Inquiries tripled.",
+ doit:"Rewrite a headline you see today so it includes a specific number or result.",
+ quiz:[["What does PAS stand for?","Problem, Agitate, Solution","Pitch, Ask, Sell","Plan, Act, Ship","Price, Audience, Sale"],["Which headline is stronger?","\"Cut your grocery bill by $60 a month\"","\"Smarter shopping\"","\"Welcome to our site\"","\"Great deals inside\""],["How many actions should a page ask for?","One","As many as possible","Three","None"]]},
+{id:"cp3",title:"From skill to income",mins:7,idea:"Show proof, pick a niche, and reach out with a specific idea.",
+ text:["Clients hire copywriters on samples, not certificates. With no clients yet, write spec pieces: rewrite a real company's landing page or email and show the before and after.","A niche, like SaaS onboarding emails or e-commerce product pages, makes you easier to remember and lets you charge more as your expertise grows.","Reach out with a specific observation and a small idea, not a generic \"I'm a copywriter.\" Start with fixed prices for defined projects, then move to monthly retainers."],
+ steps:[["Spec work","Before-and-after rewrites"],["Niche","One industry or format"],["Outreach","A specific idea per prospect"],["Price","Fixed projects, then retainers"]],
+ story:"Nora rewrote the welcome emails of three fitness apps as samples. She emailed each founder one line about why their current welcome email lost users on day two, plus her rewrite. One hired her for $800, then moved her to a $1,500 monthly retainer for all their lifecycle emails.",
+ doit:"Choose a company whose website copy feels weak. Rewrite its headline and first paragraph as your first sample.",
+ quiz:[["What do clients mostly hire copywriters on?","Samples of their work","Certificates","Years of school","Follower count"],["Good cold outreach includes…","A specific observation and idea for them","A generic introduction","Your full CV","A discount code"],["What's a spec piece?","An unpaid sample written to show your skill","A contract","A pricing sheet","A type of headline"]]}
+]}
+];
+const ALL_LESSONS=TRACKS.flatMap(t=>t.lessons.map(l=>({...l,track:t.id})));
+
+/* ---- calibration material: invented topics so nobody has prior knowledge ---- */
+const CAL={
+ visual:{title:"The Tessel water filter",qs:[["What's the intake valve called?","Mira","Sarn","Wend","Kolt"],["How long does water rest in the settling tank?","9 minutes","4 minutes","12 minutes","7 minutes"],["What is the filter made of?","Crushed shell","Charcoal","Sand","Copper wire"],["What color is the outlet tap?","Red","Blue","Green","Yellow"]]},
+ verbal:{title:"The Dunmar Lantern Festival",text:["The Dunmar Lantern Festival takes place once every seven years, in the cold month the locals call Holm.","Each family hangs green lanterns along the river, and the town's oldest resident lights the first one. The family whose lantern burns the longest receives a small copper bell, which they keep until the next festival."],
+  qs:[["How often is the festival held?","Every seven years","Every five years","Every year","Every three years"],["What do locals call the festival month?","Holm","Fenn","Varo","Esk"],["What color are the lanterns?","Green","Red","White","Blue"],["What does the winning family receive?","A copper bell","A silver coin","A new lantern","A feast"]]},
+ story:{title:"Captain Ilsa and the Salt Road",text:"Captain Ilsa had sailed the Merrow for twenty years, but she had never crossed the Salt Road this fast. Twelve days out of port, the hold was full of glass she meant to trade for cinnamon. Then the storm hit off Cape Varo. A wave tore across the deck, and when it was gone, so was the ship's brass compass. Ilsa laughed, pointed at the stars, and said, \"Then we'll steer the old way.\"",
+  qs:[["What was the ship called?","Merrow","Halden","Osprey","Corva"],["How many days out of port were they?","12","20","9","7"],["What was Ilsa trading for cinnamon?","Glass","Salt","Copper","Silk"],["Where did the storm hit?","Off Cape Varo","Off Cape Dunn","At Salt Point","In Merrow Bay"]]},
+ doing:{title:"Mix a Quell tonic",steps:[
+   {ask:"How many thornleaves go into the pot?",opts:["1","2","3","4","5"],a:"3",log:"Added 3 thornleaves"},
+   {ask:"What temperature should the water be?",opts:["Cold","Warm","Boiling"],a:"Warm",log:"Poured warm water"},
+   {ask:"Which way do you stir?",opts:["Clockwise","Counterclockwise"],a:"Counterclockwise",log:"Stirred counterclockwise"},
+   {ask:"How long does it rest before drinking?",opts:["1 minute","4 minutes","8 minutes","10 minutes"],a:"4 minutes",log:"Rested 4 minutes"}],
+  qs:[["How many thornleaves go into a Quell tonic?","3","2","4","5"],["What temperature is the water?","Warm","Cold","Boiling","Room temperature"],["Which way do you stir it?","Counterclockwise","Clockwise","In a figure eight","You don't stir it"],["How long does it rest?","4 minutes","8 minutes","1 minute","10 minutes"]]}
+};
+const DISTRACT=[["14 + 27","41","39","43","31"],["8 × 7","56","54","63","48"],["63 − 18","45","55","47","35"],["120 ÷ 4","30","40","24","32"]];
+const THINK=[
+ {k:"seq",q:"Sort comes before Wash. Wash comes before Dry. Fold comes after Dry. Which step comes first?",o:["Sort","Wash","Dry","Fold"]},
+ {k:"pat",q:"What comes next? 2, 6, 12, 20, 30, …",o:["42","40","36","44"]},
+ {k:"seq",q:"The shop always opens late on Tuesdays. Today it opened late. Is today Tuesday?",o:["Not necessarily","Yes, definitely","No, definitely not"]},
+ {k:"pat",q:"Seed is to tree as egg is to…",o:["Bird","Nest","Shell","Yolk"]},
+ {k:"seq",q:"Start with 5. Double it. Subtract 3. Double it again. What do you get?",o:["14","16","12","7"]},
+ {k:"pat",q:"Which one doesn't belong? Bridge, tunnel, ferry, river",o:["River","Bridge","Tunnel","Ferry"]}
+];
+const TYPES={
+ "seq-concrete":{name:"The Builder",line:"You lock things in by doing them, one step at a time.",tips:["Start every lesson with the hands-on exercise or a worked example.","Follow numbered steps; skip the theory until you've tried it once.","Rebuild each idea from memory as a checklist."]},
+ "seq-abstract":{name:"The Architect",line:"You need the structure first, then the details hang on it.",tips:["Read the framework or diagram before anything else.","Turn each lesson into your own outline or flowchart.","Review by redrawing the structure from memory."]},
+ "pat-concrete":{name:"The Connector",line:"You learn through examples and comparisons to things you already know.",tips:["Lead with a real story, then pull the rule out of it.","Ask yourself \"what is this like?\" for every new idea.","Review by explaining each idea with your own example."]},
+ "pat-abstract":{name:"The Strategist",line:"You grab the big-picture model first and fill in the rest fast.",tips:["Start with the one-line idea and the overall map.","Skim, then go deep only where the quiz shows a gap.","Review by predicting the answer before looking."]}
+};
+/* ================= UTIL ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const mcq=(arr)=>({q:arr[0],a:arr[1],o:shuffle(arr.slice(1))});
+const DAY=864e5;
+const pct=n=>Math.round(n)+"%";
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
+const KEYS="ABCDE";
+
+/* ================= STATE + STORAGE ================= */
+const blank=()=>({v:1,profile:null,calib:null,done:{},reviews:{},streak:{last:null,count:0},updatedAt:0});
+let STATE=blank(),storeMode="device",dbRef=null,saveT=null;
+try{const s=JSON.parse(localStorage.getItem("suffsa")||"null");if(s&&s.v===1)STATE=s}catch(e){}
+function save(){
+  STATE.updatedAt=Date.now();
+  try{localStorage.setItem("suffsa",JSON.stringify(STATE))}catch(e){}
+  if(dbRef){clearTimeout(saveT);saveT=setTimeout(()=>{dbRef.set({json:JSON.stringify(STATE),updatedAt:STATE.updatedAt}).catch(()=>{})},700)}
+}
+(async()=>{
+  try{
+    if(!window.claude||!window.claude.use)return;
+    const [user,db]=await Promise.all([window.claude.use("user"),window.claude.use("db")]);
+    if(!user||!db)return;
+    const uid=await user.id();if(!uid)return;
+    dbRef=db.collection("data/users/"+uid).doc("state");
+    const snap=await dbRef.get();
+    if(snap.exists){
+      const r=JSON.parse(snap.data().json||"null");
+      if(r&&r.v===1&&(r.updatedAt||0)>=(STATE.updatedAt||0)){STATE=r;try{localStorage.setItem("suffsa",JSON.stringify(STATE))}catch(e){}}
+      else if(STATE.profile)save();
+    }else if(STATE.profile)save();
+    storeMode="account";
+    if(["landing","dash"].includes(VIEW.name))go(home());else renderNav();
+  }catch(e){}
+})();
+
+/* ================= ROUTER ================= */
+let VIEW={name:"landing"};
+function home(){return STATE.profile?(STATE.calib?"dash":"calib"):"landing"}
+function go(name,arg){
+  if(name==="calib"&&(!CS||arg==="restart"))CS=newCalib();
+  if(name==="lesson")LS=newLesson(arg);
+  if(name==="review")RS=newReview();
+  VIEW={name,arg};render();scrollTo({top:0});
+}
+function render(){renderNav();$("#app").innerHTML=(V[VIEW.name]||V.landing)();afterRender()}
+function afterRender(){if(VIEW.name==="calib")calibAfter()}
+function dueCount(){const n=Date.now();return Object.values(STATE.reviews).filter(r=>r.due<=n).length}
+function renderNav(){
+  let links="";
+  if(!STATE.profile){
+    links=`<button class="nl" data-act="scroll" data-arg="tracks">Tracks</button><button class="nl" data-act="scroll" data-arg="how">How it works</button><button class="btn primary sm" data-act="go" data-arg="commit">Start learning</button>`;
+  }else if(!STATE.calib){
+    links=`<button class="btn hi sm" data-act="go" data-arg="calib">Finish your learning profile</button>`;
+  }else{
+    const d=dueCount(),on=n=>VIEW.name===n?" on":"";
+    links=`<button class="nl${on("dash")}" data-act="go" data-arg="dash">Today</button><button class="nl${on("review")}" data-act="go" data-arg="review">Review${d?`<span class="count">${d}</span>`:""}</button><button class="nl${on("results")}" data-act="go" data-arg="results">My profile</button>`;
+  }
+  $("#nav").innerHTML=`<button class="logo" data-act="go" data-arg="${STATE.profile?home():"landing"}"><svg><use href="#i-logo"/></svg>Suffsa</button><nav class="nav-links">${links}</nav>`;
+}
+
+/* ================= ADAPTIVE PROFILE ================= */
+function effScores(){
+  const c=STATE.calib;if(!c)return {visual:0,verbal:0,story:0,doing:0};
+  const out={};
+  FKEYS.forEach(f=>{const ls=Object.values(STATE.done).filter(d=>d.lead===f).map(d=>d.score);out[f]=(c.fs[f]*2+ls.reduce((a,b)=>a+b,0))/(2+ls.length)});
+  return out;
+}
+function rankNow(){const s=effScores(),t=STATE.calib?STATE.calib.times:{};return [...FKEYS].sort((a,b)=>s[b]-s[a]||(t[a]||0)-(t[b]||0))}
+function myTracks(){return TRACKS.filter(t=>STATE.profile.tracks.includes(t.id))}
+function nextLesson(){for(const t of myTracks())for(const l of t.lessons)if(!STATE.done[l.id])return {...l,track:t.id,trackTitle:t.title};return null}
+function bumpStreak(){
+  const today=new Date().toDateString(),y=new Date(Date.now()-DAY).toDateString(),s=STATE.streak;
+  if(s.last===today)return;s.count=s.last===y?s.count+1:1;s.last=today;
+}
+
+/* ================= VIEWS ================= */
+const V={};
+
+V.landing=()=>`
+<div class="page stack-lg">
+  <section class="hero">
+    <div class="stack">
+      <p class="eyebrow">Courses in AI, automation, agents, communication and copywriting</p>
+      <h1>Learn the skills that pay, the way <span class="mark">your</span> brain actually keeps them.</h1>
+      <p class="lede">Most people guess wrong about how they learn best. Suffsa measures it in about 8 minutes, then shapes every lesson around what you actually remember.</p>
+      <div class="row"><button class="btn primary" data-act="go" data-arg="commit">Start learning, free</button><button class="btn ghost" data-act="scroll" data-arg="how">How it works</button></div>
+    </div>
+    <div class="profile-demo" aria-label="Example learning profile">
+      <div class="row" style="justify-content:space-between"><span class="eyebrow">Example profile</span><span class="chip">The Connector</span></div>
+      <div style="font-family:var(--display);font-weight:600">Recall after a short break</div>
+      ${[["visual",50],["verbal",25],["story",100],["doing",75]].map(([f,v])=>`<div class="pd-row"><span>${FORMATS[f].name}</span><div class="bar"><i class="bg-${f}" style="width:${v}%"></i></div><span class="mono">${v}%</span></div>`).join("")}
+      <p class="muted" style="font-size:.88rem">Guessed: <b>Reading</b>. Measured: <b>Stories</b>. Lessons now open with a real example.</p>
+    </div>
+  </section>
+
+  <section class="stack" id="tracks">
+    <div class="sec-h"><p class="eyebrow">${TRACKS.length} tracks · ${TRACKS.reduce((n,t)=>n+t.lessons.length,0)} lessons</p><h2>What you can learn</h2></div>
+    <div class="grid g3">${TRACKS.map(t=>`<article class="card track-card"><div class="ti" style="color:${t.color}"><svg><use href="#${t.icon}"/></svg></div><h3>${esc(t.title)}</h3><p>${esc(t.blurb)}</p><p class="mono muted" style="font-size:.78rem">${t.lessons.length} lessons · ${t.lessons.reduce((a,l)=>a+l.mins,0)} min</p></article>`).join("")}</div>
+  </section>
+
+  <section class="stack" id="how">
+    <div class="sec-h"><p class="eyebrow">How it works</p><h2>Commit, get measured, learn your way</h2></div>
+    <div class="steps">
+      <div class="step"><span class="n">Step 1</span><h3>Commit</h3><p class="muted">Pick your goal, your tracks and how many minutes a day you'll give it.</p></div>
+      <div class="step"><span class="n">Step 2</span><h3>Get measured</h3><p class="muted">Four tiny lessons in four formats, then a recall check and six reasoning puzzles. No self-rating quiz.</p></div>
+      <div class="step"><span class="n">Step 3</span><h3>Learn your way</h3><p class="muted">Every lesson opens in the format you retain best, with a quick quiz and spaced reviews so it sticks.</p></div>
+      <div class="step"><span class="n">Always</span><h3>Keep adjusting</h3><p class="muted">Your quiz results keep updating your profile, so it gets more accurate the more you learn.</p></div>
+    </div>
+  </section>
+
+  <section class="why">
+    <div class="stack">
+      <p class="eyebrow" style="color:inherit;opacity:.7">Why we test instead of asking</p>
+      <h2>How learning feels is a poor guide to how much sticks.</h2>
+      <p class="muted">People often prefer the format that feels easiest, like re-reading, but remember more from formats that make them work a little harder. So Suffsa doesn't ask what kind of learner you are. It checks what you actually recall after a short break, and teaches from that.</p>
+    </div>
+    <div class="gap-viz" aria-label="Illustration: preferred format versus measured recall">
+      <div><div class="lbl"><span>What feels best: Reading</span><span>25%</span></div><div class="bar"><i style="width:25%;background:var(--hi)"></i></div></div>
+      <div><div class="lbl"><span>What actually stuck: Hands-on</span><span>100%</span></div><div class="bar"><i style="width:100%;background:var(--hi)"></i></div></div>
+      <p class="muted" style="font-size:.82rem">Illustrative example of a single learner's result.</p>
+    </div>
+  </section>
+
+  <section class="card stack" style="align-items:flex-start">
+    <h2 style="font-size:1.6rem">Ready when you are.</h2>
+    <p class="muted">Setup takes about 10 minutes, including your learning profile.</p>
+    <button class="btn primary" data-act="go" data-arg="commit">Start learning</button>
+  </section>
+  <footer><span>Suffsa</span><span>${storeMode==="account"?"Progress saves to your account":"Progress saves on this device"}</span></footer>
+</div>`;
+
+/* ---- commit ---- */
+let CM={goal:null,tracks:[],minutes:20};
+V.commit=()=>{
+  const goals=["Get a new job","Earn on the side","Grow in my current role","Just curious"];
+  return `<div class="page narrow stack-lg">
+  <div class="stack"><p class="eyebrow">Step 1 of 2 · Commit</p><h1 style="font-size:clamp(2rem,6vw,2.8rem)">Let's make this official.</h1><p class="muted">Tell us what you're here for. Next, an 8-minute exercise works out how you learn best.</p></div>
+  <div class="field"><label for="nm">What should we call you?</label><input type="text" id="nm" autocomplete="given-name" placeholder="First name" value="${esc(CM.name||"")}"></div>
+  <div class="field"><span class="lab">What's your goal?</span><div class="opts">${goals.map(g=>`<button class="opt" data-act="cm-goal" data-arg="${esc(g)}" aria-pressed="${CM.goal===g}">${esc(g)}</button>`).join("")}</div></div>
+  <div class="field"><span class="lab">Pick your tracks <span class="muted" style="font-weight:500">(one or more)</span></span><div class="opts col">${TRACKS.map(t=>`<button class="opt" data-act="cm-track" data-arg="${t.id}" aria-pressed="${CM.tracks.includes(t.id)}"><span class="sw" style="background:${t.color}"></span><span><b>${esc(t.title)}</b><br><span class="muted" style="font-weight:500;font-size:.9rem">${esc(t.blurb)}</span></span></button>`).join("")}</div></div>
+  <div class="field"><span class="lab">Minutes a day you'll commit</span><div class="opts">${[10,20,30].map(m=>`<button class="opt" data-act="cm-min" data-arg="${m}" aria-pressed="${CM.minutes===m}"><span class="mono">${m}</span> min</button>`).join("")}</div></div>
+  <button class="btn primary block" data-act="cm-go">I'm committed. Measure how I learn</button>
+</div>`};
+
+/* ---- calibration ---- */
+let CS=null,calTimer=null;
+function newCalib(){
+  const order=shuffle(FKEYS);
+  const tests=shuffle(order.flatMap(f=>CAL[f].qs.map(q=>({...mcq(q),fmt:f}))));
+  return {phase:"predict",pred:null,predConf:null,order,i:0,t0:0,times:{},doStep:0,doMsg:null,doLog:[],
+    dist:DISTRACT.map(mcq),dIdx:0,tests,tIdx:0,sel:null,conf:null,answers:[],
+    think:THINK.map(t=>({k:t.k,q:t.q,a:t.o[0],o:shuffle(t.o)})),kIdx:0,thinkAns:[],qStart:0};
+}
+const PH=["predict","intro","learn","distract","test","think"];
+function progBar(){const idx=PH.indexOf(CS.phase);return `<div class="prog" aria-hidden="true">${PH.map((p,i)=>`<i class="${i<=idx?"on":""}"></i>`).join("")}</div>`}
+V.calib=()=>{
+  const c=CS;let body="";
+  if(c.phase==="predict"){
+    body=`<p class="eyebrow">Step 2 of 2 · Your learning profile</p>
+    <h1 style="font-size:clamp(1.8rem,5vw,2.4rem)">First, a guess.</h1>
+    <p class="muted">Which way do you think you learn and remember best? We'll check it against what you actually recall.</p>
+    <div class="opts col">${FKEYS.map(f=>`<button class="opt" data-act="c-pred" data-arg="${f}" aria-pressed="${c.pred===f}"><span class="sw bg-${f}"></span><span><b>${FORMATS[f].name}</b> <span class="muted" style="font-weight:500">· ${FORMATS[f].verb}</span></span></button>`).join("")}</div>
+    <div class="field"><span class="lab">How sure are you?</span><div class="opts">${["Not very","Fairly","Very"].map(x=>`<button class="opt" data-act="c-pconf" data-arg="${x}" aria-pressed="${c.predConf===x}">${x}</button>`).join("")}</div></div>
+    <button class="btn primary" data-act="c-next" ${c.pred&&c.predConf?"":"disabled"}>Continue</button>`;
+  }else if(c.phase==="intro"){
+    body=`<p class="eyebrow">How this works</p><h1 style="font-size:clamp(1.8rem,5vw,2.4rem)">Four tiny lessons, four formats.</h1>
+    <div class="prose"><p>Each lesson is about something made up, so nobody starts with an advantage. Take as long as you need on each one, then tap <b>Got it</b>.</p><p>Don't take notes. After a short break you'll get a recall check, then six quick puzzles. It takes about 8 minutes.</p></div>
+    <div class="row">${c.order.map((f,i)=>`<span class="fmt-tag c-${f}">${i+1} · ${FORMATS[f].name}</span>`).join("")}</div>
+    <button class="btn primary" data-act="c-startlearn">Start lesson 1</button>`;
+  }else if(c.phase==="learn"){
+    const f=c.order[c.i];
+    body=`<div class="stage-h"><span class="fmt-tag c-${f}">Lesson ${c.i+1} of 4 · ${FORMATS[f].name}</span><span class="eyebrow">${esc(CAL[f].title)}</span></div>
+    <div class="timer" aria-hidden="true"><i id="ctimer"></i></div>
+    ${calLesson(f)}
+    <button class="btn primary" data-act="c-gotit" ${f==="doing"&&c.doStep<4?"disabled":""}>Got it</button>`;
+  }else if(c.phase==="distract"){
+    const q=c.dist[c.dIdx];
+    body=`<p class="eyebrow">Quick break · ${c.dIdx+1} of ${c.dist.length}</p><p class="q">${esc(q.q)} = ?</p>
+    <div class="grid g2" style="grid-template-columns:repeat(2,1fr)">${q.o.map(o=>`<button class="ans" data-act="c-dist" data-arg="${esc(o)}"><span class="mono">${esc(o)}</span></button>`).join("")}</div>
+    <p class="muted">Clearing your short-term memory so the recall check measures what really stuck.</p>`;
+  }else if(c.phase==="test"){
+    const q=c.tests[c.tIdx];
+    body=`<div class="stage-h"><p class="eyebrow">Recall check · ${c.tIdx+1} of ${c.tests.length}</p><span class="eyebrow">No feedback until the end</span></div>
+    <p class="q">${esc(q.q)}</p>
+    <div class="stack" style="gap:8px">${q.o.map((o,i)=>`<button class="ans" data-act="c-sel" data-arg="${esc(o)}" aria-pressed="${c.sel===o}"><span class="k">${KEYS[i]}</span>${esc(o)}</button>`).join("")}</div>
+    <div class="field"><span class="lab">How sure are you?</span><div class="opts">${[["sure","Sure"],["think","Think so"],["guess","Guessing"]].map(([k,l])=>`<button class="opt" data-act="c-conf" data-arg="${k}" aria-pressed="${c.conf===k}">${l}</button>`).join("")}</div></div>
+    <button class="btn primary" data-act="c-ans" ${c.sel&&c.conf?"":"disabled"}>Next</button>`;
+  }else if(c.phase==="think"){
+    const q=c.think[c.kIdx];
+    body=`<div class="stage-h"><p class="eyebrow">Reasoning puzzles · ${c.kIdx+1} of ${c.think.length}</p><span class="eyebrow">Answer at your normal pace</span></div>
+    <p class="q">${esc(q.q)}</p>
+    <div class="stack" style="gap:8px">${q.o.map((o,i)=>`<button class="ans" data-act="c-think" data-arg="${esc(o)}"><span class="k">${KEYS[i]}</span>${esc(o)}</button>`).join("")}</div>`;
+  }
+  return `<div class="page narrow stack">${progBar()}${body}</div>`;
+};
+function calLesson(f){
+  const c=CS;
+  if(f==="verbal")return `<div class="prose">${CAL.verbal.text.map(p=>`<p>${esc(p)}</p>`).join("")}</div>`;
+  if(f==="story")return `<p class="storycard">${esc(CAL.story.text)}</p>`;
+  if(f==="visual")return `<div class="diagram card" style="padding:12px">${tesselSVG()}</div><p class="muted" style="font-size:.9rem">Water flows left to right.</p>`;
+  const st=CAL.doing.steps,done=c.doStep>=st.length,cur=st[c.doStep];
+  const fill=[0,28,55,55,55][c.doStep];
+  return `<div class="card stack">
+    <p class="muted">You're making a Quell tonic for the first time. Make each choice; you'll be told if it's right.</p>
+    <div class="cauldron">
+      <svg class="pot" viewBox="0 0 110 110" aria-hidden="true"><path d="M15 40h80l-8 52a10 10 0 0 1-10 8H33a10 10 0 0 1-10-8z" fill="var(--surface-2)" stroke="var(--ink)" stroke-width="3"/>
+        <clipPath id="pc"><path d="M15 40h80l-8 52a10 10 0 0 1-10 8H33a10 10 0 0 1-10-8z"/></clipPath>
+        <rect x="10" y="${100-fill}" width="90" height="${fill}" fill="var(--doing)" opacity=".55" clip-path="url(#pc)"/>
+        ${c.doStep>=1?`<g fill="var(--doing)"><ellipse cx="42" cy="${c.doStep>=2?62:88}" rx="7" ry="3"/><ellipse cx="56" cy="${c.doStep>=2?66:90}" rx="7" ry="3"/><ellipse cx="68" cy="${c.doStep>=2?60:87}" rx="7" ry="3"/></g>`:""}
+        ${c.doStep>=3?`<path d="M75 52a20 8 0 1 1-40 0" fill="none" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><defs><marker id="ar" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0 0l6 3-6 3z" fill="var(--ink)"/></marker></defs>`:""}
+        <rect x="8" y="34" width="94" height="8" rx="4" fill="var(--ink)"/></svg>
+      <div class="recipe-log">${c.doLog.length?c.doLog.map(l=>`<span>✓ ${esc(l)}</span>`).join(""):"<span class='muted'>Nothing added yet</span>"}</div>
+    </div>
+    ${done?`<p class="feedback good">Tonic ready. Tap Got it to continue.</p>`:`<p class="q" style="font-size:1.2rem">${esc(cur.ask)}</p>
+    <div class="opts">${cur.opts.map(o=>`<button class="opt" data-act="c-do" data-arg="${esc(o)}">${esc(o)}</button>`).join("")}</div>
+    ${c.doMsg?`<p class="feedback bad">${esc(c.doMsg)}</p>`:""}`}
+  </div>`;
+}
+function tesselSVG(){
+  const shells=[0,1,2,3,4,5].map(i=>`<path d="M${372+(i%3)*22} ${118+Math.floor(i/3)*24}a8 8 0 0 1 16 0z" fill="#e9d9bf" stroke="#9a7b4f" stroke-width="1.5"/>`).join("");
+  return `<svg viewBox="0 0 640 250" role="img" aria-label="Diagram of the Tessel water filter">
+  <path d="M84 125H150M262 125H350M450 125H520" stroke="#7aa7d9" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <circle cx="60" cy="125" r="30" fill="#3a64f5"/><path d="M45 125h30M60 110v30" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+  <text x="60" y="185" text-anchor="middle" font-weight="700" font-size="17">Mira</text><text x="60" y="205" text-anchor="middle" font-size="13" opacity=".7">intake valve</text>
+  <rect x="150" y="70" width="112" height="110" rx="10" fill="none" stroke="var(--ink)" stroke-width="3"/><rect x="153" y="110" width="106" height="67" rx="7" fill="#7aa7d9" opacity=".55"/>
+  <circle cx="206" cy="45" r="20" fill="var(--surface)" stroke="var(--ink)" stroke-width="3"/><path d="M206 33v12l8 6" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <text x="206" y="150" text-anchor="middle" font-weight="700" font-size="26">9 min</text>
+  <text x="206" y="205" text-anchor="middle" font-weight="700" font-size="17">Kolt</text><text x="206" y="225" text-anchor="middle" font-size="13" opacity=".7">settling tank</text>
+  <rect x="350" y="80" width="100" height="90" rx="10" fill="#f6efe3" stroke="#9a7b4f" stroke-width="3"/>${shells}
+  <text x="400" y="205" text-anchor="middle" font-weight="700" font-size="17">Sarn</text><text x="400" y="225" text-anchor="middle" font-size="13" opacity=".7">filter (crushed shell)</text>
+  <path d="M520 100h50a14 14 0 0 1 14 14v26h-22v-18h-42z" fill="#e0342c"/><rect x="540" y="86" width="16" height="14" rx="3" fill="#e0342c"/><path d="M573 150v14" stroke="#7aa7d9" stroke-width="6" stroke-linecap="round"/>
+  <text x="560" y="205" text-anchor="middle" font-weight="700" font-size="17">Wend</text><text x="560" y="225" text-anchor="middle" font-size="13" opacity=".7">outlet tap</text>
+  </svg>`;
+}
+function calibAfter(){
+  clearInterval(calTimer);
+  if(CS.phase==="learn"){
+    const bar=$("#ctimer");if(!bar)return;
+    const tick=()=>{const s=(Date.now()-CS.t0)/1000;bar.style.width=Math.min(100,s/45*100)+"%"};tick();calTimer=setInterval(tick,1000);
+  }
+  if(CS.phase==="test"||CS.phase==="think")if(!CS.qStart)CS.qStart=Date.now();
+}
+function computeProfile(){
+  const c=CS,fs={},times={};
+  FKEYS.forEach(f=>{const a=c.answers.filter(x=>x.fmt===f);fs[f]=a.filter(x=>x.ok).length/a.length*100;times[f]=Math.round(c.times[f]||0)});
+  const rank=[...FKEYS].sort((a,b)=>fs[b]-fs[a]||times[a]-times[b]);
+  const sure=c.answers.filter(x=>x.conf==="sure"),guess=c.answers.filter(x=>x.conf==="guess");
+  const acc=c.answers.filter(x=>x.ok).length/c.answers.length;
+  const sureAcc=sure.length?sure.filter(x=>x.ok).length/sure.length:null,guessAcc=guess.length?guess.filter(x=>x.ok).length/guess.length:null;
+  let conf="calibrated";
+  if(sure.length>=4&&sureAcc<.75)conf="over";
+  else if((guess.length>=3&&guessAcc>=.5)||(sure.length/c.answers.length<.25&&acc>=.7))conf="under";
+  const read=["visual","verbal","story"].map(f=>times[f]),avg=read.reduce((a,b)=>a+b,0)/read.length;
+  const pace=avg<20?"quick":avg<45?"steady":"deliberate";
+  const seq=c.thinkAns.filter(x=>x.k==="seq"),pat=c.thinkAns.filter(x=>x.k==="pat");
+  const seqC=seq.filter(x=>x.ok).length,patC=pat.filter(x=>x.ok).length;
+  const seqMs=seq.reduce((a,x)=>a+x.ms,0)/3,patMs=pat.reduce((a,x)=>a+x.ms,0)/3;
+  const axis=seqC>patC?"seq":patC>seqC?"pat":(seqMs<=patMs?"seq":"pat");
+  const concrete=Math.max(fs.story,fs.doing),abstract=Math.max(fs.visual,fs.verbal);
+  const axis2=concrete>abstract?"concrete":abstract>concrete?"abstract":(["story","doing"].includes(rank[0])?"concrete":"abstract");
+  STATE.calib={pred:c.pred,predConf:c.predConf,fs,times,rank,acc,sureN:sure.length,sureAcc,guessN:guess.length,guessAcc,conf,pace,avg:Math.round(avg),
+    think:{seqC,patC,seqMs:Math.round(seqMs),patMs:Math.round(patMs),axis},axis2,type:axis+"-"+axis2,at:Date.now()};
+  save();CS=null;go("results");
+}
+
+/* ---- results / profile ---- */
+V.results=()=>{
+  const c=STATE.calib;if(!c)return V.landing();
+  const T=TYPES[c.type],rank=rankNow(),eff=effScores(),best=c.rank[0],nDone=Object.keys(STATE.done).length;
+  const predRight=c.fs[c.pred]===c.fs[best];
+  const gapMsg=predRight?`Your instinct was right: ${FORMATS[c.pred].name.toLowerCase()} tied for your best recall. That match is less common than people expect.`
+    :`You recalled ${pct(c.fs[c.pred])} from ${FORMATS[c.pred].name.toLowerCase()} but ${pct(c.fs[best])} from ${FORMATS[best].name.toLowerCase()}. That gap is normal: how learning feels is a poor guide to how much sticks.`;
+  const confTxt={over:["Overconfident","When you felt sure, you were right "+pct((c.sureAcc||0)*100)+" of the time. We'll have you answer before you see explanations, so the feeling of knowing gets tested."],
+    under:["Underconfident","Your guesses were often right. You know more than you think, so we'll push you to move faster and trust first answers."],
+    calibrated:["Well calibrated","Your confidence matched your accuracy. We'll use your confidence to decide what to review and when."]}[c.conf];
+  const paceTxt={quick:"You move fast. Lessons stay short, and we'll check recall right away.",steady:"You take a steady pace. Standard lesson length suits you.",deliberate:"You take your time. We'll split lessons into smaller chunks with checks in between."}[c.pace];
+  const thinkTxt=c.think.axis==="seq"?"Step-by-step":"Pattern-first";
+  return `<div class="page narrow stack-lg">
+  <section class="stack">
+    <p class="eyebrow">Your learning profile${nDone?` · updated after ${nDone} lesson${nDone>1?"s":""}`:""}</p>
+    <h1 class="big-type">${esc(T.name)}</h1>
+    <p style="font-size:1.2rem">${esc(T.line)}</p>
+  </section>
+
+  <section class="stack">
+    <h2 style="font-size:1.4rem">What you guessed vs. what we measured</h2>
+    <div class="compare"><div class="box"><p class="eyebrow">You said (${esc(c.predConf.toLowerCase())} sure)</p><p style="font-family:var(--display);font-size:1.4rem;font-weight:700">${FORMATS[c.pred].name}</p></div><span class="arrow">→</span><div class="box reveal"><p class="eyebrow" style="color:inherit;opacity:.75">Your recall showed</p><p style="font-family:var(--display);font-size:1.4rem;font-weight:700">${FORMATS[best].name}</p></div></div>
+    <p>${esc(gapMsg)}</p>
+    <div class="card res-bars" aria-label="Recall by format">
+      <p class="eyebrow">Recall after a short break, by format</p>
+      ${c.rank.map(f=>`<div class="rb"><span class="name"><span class="sw bg-${f}"></span>${FORMATS[f].name}</span><div class="bar"><i class="bg-${f}" style="width:${Math.max(3,c.fs[f])}%"></i></div><span class="mono">${pct(c.fs[f])}</span></div>`).join("")}
+      <p class="muted" style="font-size:.85rem">Based on 4 questions per format. Your guess: <b>${FORMATS[c.pred].name}</b>.</p>
+    </div>
+  </section>
+
+  <section class="grid g2">
+    <div class="card stat"><span class="eyebrow">Confidence</span><span class="v">${confTxt[0]}</span><p class="muted">${esc(confTxt[1])}</p></div>
+    <div class="card stat"><span class="eyebrow">Thinking style</span><span class="v">${thinkTxt}</span><p class="muted">Step-by-step puzzles: ${c.think.seqC}/3 · pattern puzzles: ${c.think.patC}/3. You learn best from ${c.axis2==="concrete"?"concrete examples and doing":"structured explanations and models"}.</p></div>
+    <div class="card stat"><span class="eyebrow">Pace</span><span class="v" style="text-transform:capitalize">${c.pace}</span><p class="muted">About <span class="mono">${c.avg}s</span> per mini-lesson. ${esc(paceTxt)}</p></div>
+    <div class="card stat"><span class="eyebrow">Overall recall</span><span class="v mono">${pct(c.acc*100)}</span><p class="muted">Across all 16 questions, after a short break.</p></div>
+  </section>
+
+  <section class="card stack">
+    <h2 style="font-size:1.4rem">How Suffsa will teach you</h2>
+    <ol class="plan">
+      <li>Lessons open with <b>${FORMATS[rank[0]].lead}</b>, then <b>${FORMATS[rank[1]].lead}</b>. The other formats are one tap away.</li>
+      ${T.tips.map(t=>`<li>${esc(t)}</li>`).join("")}
+      <li>Every lesson ends with a 3-question check, and each question comes back for review after 1, 3, 7 and 16 days. Spaced recall helps every kind of learner, so it's on for everyone.</li>
+    </ol>
+    ${nDone?`<p class="muted" style="font-size:.9rem">Current format ranking, including your lesson quizzes: ${rank.map(f=>`${FORMATS[f].name} <span class="mono">${pct(eff[f])}</span>`).join(" · ")}</p>`:""}
+  </section>
+
+  <p class="muted" style="font-size:.9rem">This is a first read from about 8 minutes of data, not a fixed label. It updates from every lesson quiz, and every fourth lesson opens in a different format to check it's still right.</p>
+  <div class="row"><button class="btn primary" data-act="go" data-arg="dash">Go to today's lesson</button><button class="btn ghost" data-act="go" data-arg="calib" data-arg2="restart">Retake the profile</button></div>
+</div>`};
+
+/* ---- dashboard ---- */
+V.dash=()=>{
+  const p=STATE.profile,c=STATE.calib,nx=nextLesson(),d=dueCount(),T=TYPES[c.type];
+  const total=myTracks().reduce((a,t)=>a+t.lessons.length,0),doneN=myTracks().reduce((a,t)=>a+t.lessons.filter(l=>STATE.done[l.id]).length,0);
+  const lead=nx?pickLead():null;
+  const others=TRACKS.filter(t=>!p.tracks.includes(t.id));
+  return `<div class="page stack-lg">
+  <div class="dash-top"><div class="stack" style="gap:6px"><p class="eyebrow">Hi ${esc(p.name)} · goal: ${esc(p.goal)}</p><h1>Keep your loop going.</h1></div>
+    <span class="chip">${p.minutes} min a day</span></div>
+  <div class="kpis">
+    <div class="card stat"><span class="eyebrow">Lessons</span><span class="v mono">${doneN}/${total}</span></div>
+    <div class="card stat"><span class="eyebrow">Due for review</span><span class="v mono">${d}</span></div>
+    <div class="card stat"><span class="eyebrow">Streak</span><span class="v mono">${STATE.streak.count||0} day${STATE.streak.count===1?"":"s"}</span></div>
+    <button class="card stat" style="text-align:left;cursor:pointer" data-act="go" data-arg="results"><span class="eyebrow">Your profile</span><span class="v">${esc(T.name)}</span></button>
+  </div>
+  <div class="grid g2">
+    ${nx?`<div class="card next-card"><p class="eyebrow" style="color:inherit;opacity:.7">Up next · ${esc(nx.trackTitle)}</p><h2 style="font-size:1.6rem">${esc(nx.title)}</h2><p class="muted">${nx.mins} min · opens with ${FORMATS[lead.f].lead}${lead.explore?" (a profile check)":""}</p><div><button class="btn hi" data-act="go" data-arg="lesson" data-arg2="${nx.id}">Start lesson</button></div></div>`
+      :`<div class="card next-card"><h2 style="font-size:1.6rem">You've finished your tracks.</h2><p class="muted">Add another track below, or keep your reviews going.</p></div>`}
+    <div class="card stack"><p class="eyebrow">Spaced review</p><h2 style="font-size:1.4rem">${d?`${d} question${d>1?"s":""} ready`:"All caught up"}</h2><p class="muted">${d?"A few minutes of recall now does more than re-reading later.":"Questions from finished lessons come back here right before you'd forget them."}</p><div><button class="btn ${d?"primary":"ghost"}" data-act="go" data-arg="review" ${d?"":"disabled"}>Start review</button></div></div>
+  </div>
+  <section class="stack"><h2 style="font-size:1.4rem">Your tracks</h2>
+    <div class="grid g2">${myTracks().map(t=>{const n=t.lessons.filter(l=>STATE.done[l.id]).length;return `<div class="card stack"><div class="row"><div class="ti" style="color:${t.color};width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2)"><svg style="width:20px;height:20px"><use href="#${t.icon}"/></svg></div><div style="flex:1;min-width:0"><h3 style="font-size:1.1rem">${esc(t.title)}</h3><p class="mono muted" style="font-size:.75rem">${n}/${t.lessons.length} done</p></div></div>
+      <div class="bar trackprog"><i style="width:${n/t.lessons.length*100}%;background:${t.color}"></i></div>
+      <div class="lesson-list">${t.lessons.map(l=>{const dn=STATE.done[l.id];return `<button class="li${dn?" done":""}" data-act="go" data-arg="lesson" data-arg2="${l.id}"><span class="dot">${dn?"✓":""}</span><span class="t">${esc(l.title)}</span><span class="m">${dn?pct(dn.score):l.mins+" min"}</span></button>`}).join("")}</div></div>`}).join("")}</div>
+  </section>
+  ${others.length?`<section class="stack"><h2 style="font-size:1.2rem">Add a track</h2><div class="opts">${others.map(t=>`<button class="opt" data-act="add-track" data-arg="${t.id}"><span class="sw" style="background:${t.color}"></span>${esc(t.title)}</button>`).join("")}</div></section>`:""}
+  <footer><span>Suffsa</span><span>${storeMode==="account"?"Progress saves to your account":"Progress saves on this device only"}</span></footer>
+</div>`};
+
+/* ---- lesson ---- */
+let LS=null;
+function pickLead(){
+  const r=rankNow(),n=Object.keys(STATE.done).length;
+  if((n+1)%4===0){const cnt=f=>Object.values(STATE.done).filter(d=>d.lead===f).length;const alt=[r[1],r[2],r[3]].sort((a,b)=>cnt(a)-cnt(b))[0];return {f:alt,explore:true}}
+  return {f:r[0],explore:false};
+}
+function newLesson(id){
+  const l=ALL_LESSONS.find(x=>x.id===id),lead=pickLead(),r=rankNow();
+  const others=r.filter(f=>f!==lead.f);
+  return {l,lead:lead.f,explore:lead.explore,tab:others[0],others,order:{pool:shuffle(l.steps.map((s,i)=>i)),done:[]},
+    phase:"learn",qs:l.quiz.map((q,i)=>({...mcq(q),i})),qi:0,picked:null,results:[]};
+}
+function block(f,l){
+  if(f==="visual")return `<ol class="flow">${l.steps.map(s=>`<li><b>${esc(s[0])}</b><span>${esc(s[1])}</span></li>`).join("")}</ol>`;
+  if(f==="verbal")return `<div class="prose">${l.text.map(p=>`<p>${esc(p)}</p>`).join("")}</div>`;
+  if(f==="story")return `<p class="storycard" style="font-style:normal">${esc(l.story)}</p>`;
+  const o=LS.order,complete=o.done.length===l.steps.length;
+  return `<div class="stack"><p class="muted">Put the steps in order. Tap the one that comes first.</p>
+    <div class="order-done">${o.done.map((i,k)=>`<div class="slot"><span class="mono">${k+1}</span><span><b>${esc(l.steps[i][0])}</b> <span class="muted">· ${esc(l.steps[i][1])}</span></span></div>`).join("")||`<p class="muted" style="font-size:.9rem">Your order will appear here.</p>`}</div>
+    ${complete?`<p class="feedback good">That's the sequence.</p>`:`<div class="order-pool">${o.pool.filter(i=>!o.done.includes(i)).map(i=>`<button class="opt" data-act="l-order" data-arg="${i}">${esc(l.steps[i][0])}</button>`).join("")}</div>`}
+    <p class="doit"><span class="eyebrow" style="color:var(--doing)">Do it for real</span><br>${esc(l.doit)}</p></div>`;
+}
+V.lesson=()=>{
+  const s=LS,l=s.l,t=TRACKS.find(x=>x.id===l.track);
+  if(s.phase==="learn")return `<div class="page narrow stack-lg">
+  <div class="lesson-h"><button class="btn ghost sm" style="align-self:flex-start" data-act="go" data-arg="dash">← Today</button>
+    <p class="eyebrow">${esc(t.title)} · ${l.mins} min</p><h1>${esc(l.title)}</h1><p class="idea"><span class="mark">${esc(l.idea)}</span></p>
+    <p class="lead-note"><span class="fmt-tag c-${s.lead}">${FORMATS[s.lead].name}</span>${s.explore?"This lesson opens in a different format to check your profile is still right.":"Opens in your strongest format."}</p></div>
+  <section class="block">${block(s.lead,l)}</section>
+  ${l.viz?vizBlock(l.viz):""}
+  <section class="block card"><p class="eyebrow">See it another way</p>
+    <div class="tabs">${s.others.map(f=>`<button class="tab" data-act="l-tab" data-arg="${f}" aria-pressed="${s.tab===f}"><span class="sw bg-${f}"></span>${FORMATS[f].name}</button>`).join("")}</div>
+    ${block(s.tab,l)}</section>
+  <div class="stack" style="align-items:flex-start"><p class="muted">When you're ready, we'll hide the lesson and check what stuck.</p><button class="btn primary" data-act="l-quiz">Quiz me · 3 questions</button></div>
+</div>`;
+  if(s.phase==="quiz"){const q=s.qs[s.qi],answered=s.picked!=null;
+    return `<div class="page narrow stack"><div class="prog">${s.qs.map((x,i)=>`<i class="${i<=s.qi?"on":""}"></i>`).join("")}</div>
+    <p class="eyebrow">${esc(l.title)} · question ${s.qi+1} of 3</p><p class="q">${esc(q.q)}</p>
+    <div class="stack" style="gap:8px">${q.o.map((o,i)=>`<button class="ans${answered?(o===q.a?" right":o===s.picked?" wrong":""):""}" data-act="l-pick" data-arg="${esc(o)}" ${answered?"disabled":""}><span class="k">${KEYS[i]}</span>${esc(o)}</button>`).join("")}</div>
+    ${answered?`<p class="feedback ${s.picked===q.a?"good":"bad"}">${s.picked===q.a?"Correct.":"Not quite. The answer is: "+esc(q.a)}</p><button class="btn primary" data-act="l-next">${s.qi<2?"Next question":"See results"}</button>`:""}</div>`}
+  const score=s.results.filter(Boolean).length/3*100,nx=nextLesson();
+  return `<div class="page narrow stack-lg"><div class="stack"><p class="eyebrow">Lesson complete</p><h1 style="font-size:clamp(2rem,6vw,3rem)"><span class="mono">${s.results.filter(Boolean).length}/3</span> on ${esc(l.title)}</h1>
+    <p class="muted">This lesson opened with ${FORMATS[s.lead].name.toLowerCase()}. Your score has been added to your profile, and these questions will come back for review tomorrow.</p></div>
+    <div class="row">${nx?`<button class="btn primary" data-act="go" data-arg="lesson" data-arg2="${nx.id}">Next: ${esc(nx.title)}</button>`:""}<button class="btn ghost" data-act="go" data-arg="dash">Back to today</button></div></div>`;
+};
+
+
+function vizBlock(name){
+  return `<section class="card stack viz"><p class="eyebrow">Watch a harness run</p>
+    <p class="muted" style="font-size:.95rem">A simulated multi-agent run. Watch for <b>the loop</b> (router → agents → merge), <b>agent 05 failing and being retried</b>, the <b>checks</b> (cite check, verify) before anything is written, and the <b>budget</b> ticking up with every step.</p>
+    <iframe class="viz-frame" src="viz/${name}.html" title="Animated multi-agent run" loading="lazy"></iframe></section>`;
+}
+addEventListener("message",e=>{if(e.data&&e.data.type==="lw-viz-height"){document.querySelectorAll(".viz-frame").forEach(f=>{if(f.contentWindow===e.source)f.style.height=Math.ceil(e.data.h)+"px"})}});
+/* ---- review ---- */
+let RS=null;
+const BOX_DAYS=[0,1,3,7,16,35];
+function newReview(){
+  const n=Date.now(),due=shuffle(Object.entries(STATE.reviews).filter(([k,r])=>r.due<=n).map(([k])=>k)).slice(0,10);
+  return {items:due.map(k=>{const [lid,qi]=k.split(":");const l=ALL_LESSONS.find(x=>x.id===lid);return {k,l,...mcq(l.quiz[+qi])}}),i:0,picked:null,right:0};
+}
+V.review=()=>{
+  const r=RS;
+  if(!r.items.length)return `<div class="page narrow stack"><p class="eyebrow">Spaced review</p><h1 style="font-size:2rem">Nothing due right now.</h1><p class="muted">Finish a lesson and its questions will show up here tomorrow.</p><div><button class="btn primary" data-act="go" data-arg="dash">Back to today</button></div></div>`;
+  if(r.i>=r.items.length)return `<div class="page narrow stack"><p class="eyebrow">Review done</p><h1 style="font-size:2rem"><span class="mono">${r.right}/${r.items.length}</span> remembered</h1><p class="muted">Ones you got right come back later; ones you missed come back tomorrow.</p><div><button class="btn primary" data-act="go" data-arg="dash">Back to today</button></div></div>`;
+  const q=r.items[r.i],answered=r.picked!=null;
+  return `<div class="page narrow stack"><div class="prog">${r.items.map((x,i)=>`<i class="${i<=r.i?"on":""}"></i>`).join("")}</div>
+  <p class="eyebrow">Review · ${esc(q.l.title)}</p><p class="q">${esc(q.q)}</p>
+  <div class="stack" style="gap:8px">${q.o.map((o,i)=>`<button class="ans${answered?(o===q.a?" right":o===r.picked?" wrong":""):""}" data-act="r-pick" data-arg="${esc(o)}" ${answered?"disabled":""}><span class="k">${KEYS[i]}</span>${esc(o)}</button>`).join("")}</div>
+  ${answered?`<p class="feedback ${r.picked===q.a?"good":"bad"}">${r.picked===q.a?"Correct. See you in "+BOX_DAYS[Math.min(5,STATE.reviews[q.k].box)]+" days.":"The answer is: "+esc(q.a)+". This one comes back tomorrow."}</p><button class="btn primary" data-act="r-next">Next</button>`:""}</div>`;
+};
+
+/* ================= ACTIONS ================= */
+const ACT={
+  go:(a,el)=>go(a,el.dataset.arg2),
+  scroll:a=>{if(VIEW.name!=="landing")go("landing");setTimeout(()=>document.getElementById(a)?.scrollIntoView({behavior:"smooth"}),30)},
+  "cm-goal":a=>{CM.name=$("#nm").value;CM.goal=a;render()},
+  "cm-track":a=>{CM.name=$("#nm").value;CM.tracks=CM.tracks.includes(a)?CM.tracks.filter(x=>x!==a):[...CM.tracks,a];render()},
+  "cm-min":a=>{CM.name=$("#nm").value;CM.minutes=+a;render()},
+  "cm-go":()=>{
+    const name=$("#nm").value.trim();
+    if(!name){toast("Add your name first.");$("#nm").focus();return}
+    if(!CM.goal){toast("Pick a goal.");return}
+    if(!CM.tracks.length){toast("Pick at least one track.");return}
+    STATE.profile={name,goal:CM.goal,tracks:CM.tracks,minutes:CM.minutes,committedAt:Date.now()};save();go("calib","restart");
+  },
+  "c-pred":a=>{CS.pred=a;render()},
+  "c-pconf":a=>{CS.predConf=a;render()},
+  "c-next":()=>{CS.phase="intro";render()},
+  "c-startlearn":()=>{CS.phase="learn";CS.i=0;CS.t0=Date.now();render()},
+  "c-do":a=>{const st=CAL.doing.steps[CS.doStep];if(a===st.a){CS.doLog.push(st.log);CS.doStep++;CS.doMsg=null}else CS.doMsg=`Not quite, it isn't ${a}. Try again.`;render()},
+  "c-gotit":()=>{const f=CS.order[CS.i];CS.times[f]=(Date.now()-CS.t0)/1000;
+    if(CS.i<3){CS.i++;CS.t0=Date.now();render();scrollTo({top:0})}else{CS.phase="distract";render()}},
+  "c-dist":()=>{CS.dIdx++;if(CS.dIdx>=CS.dist.length){CS.phase="test";CS.qStart=0}render()},
+  "c-sel":a=>{CS.sel=a;render()},
+  "c-conf":a=>{CS.conf=a;render()},
+  "c-ans":()=>{const q=CS.tests[CS.tIdx];CS.answers.push({fmt:q.fmt,ok:CS.sel===q.a,conf:CS.conf,ms:Date.now()-CS.qStart});
+    CS.sel=null;CS.conf=null;CS.qStart=0;CS.tIdx++;if(CS.tIdx>=CS.tests.length)CS.phase="think";render()},
+  "c-think":a=>{const q=CS.think[CS.kIdx];CS.thinkAns.push({k:q.k,ok:a===q.a,ms:Date.now()-CS.qStart});CS.qStart=0;CS.kIdx++;
+    if(CS.kIdx>=CS.think.length)computeProfile();else render()},
+  "l-tab":a=>{LS.tab=a;render()},
+  "l-order":a=>{const l=LS.l,o=LS.order,want=o.done.length;if(+a===want){o.done.push(+a);render()}else toast(`Not yet. What comes before "${l.steps[+a][0]}"?`)},
+  "l-quiz":()=>{LS.phase="quiz";render();scrollTo({top:0})},
+  "l-pick":a=>{LS.picked=a;LS.results[LS.qi]=a===LS.qs[LS.qi].a;render()},
+  "l-next":()=>{if(LS.qi<2){LS.qi++;LS.picked=null;render();return}
+    const l=LS.l,score=LS.results.filter(Boolean).length/3*100,n=Date.now();
+    STATE.done[l.id]={score,lead:LS.lead,at:n};
+    LS.qs.forEach(q=>{const k=l.id+":"+q.i;if(!STATE.reviews[k])STATE.reviews[k]={box:LS.results[LS.qs.indexOf(q)]?1:0,due:n+DAY-36e5}});
+    bumpStreak();save();LS.phase="done";render()},
+  "r-pick":a=>{const r=RS,q=r.items[r.i],rv=STATE.reviews[q.k];r.picked=a;
+    if(a===q.a){r.right++;rv.box=Math.min(5,rv.box+1);rv.due=Date.now()+BOX_DAYS[rv.box]*DAY-36e5}else{rv.box=1;rv.due=Date.now()+DAY-36e5}
+    save();render()},
+  "r-next":()=>{RS.i++;RS.picked=null;if(RS.i>=RS.items.length){bumpStreak();save()}render()},
+  "add-track":a=>{STATE.profile.tracks.push(a);save();render();toast("Track added")}
+};
+document.addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el||el.disabled)return;const f=ACT[el.dataset.act];if(f)f(el.dataset.arg,el)});
+
+VIEW={name:home()};
+if(VIEW.name==="calib")CS=newCalib();
+render();
+</script>
+
+</body></html>
