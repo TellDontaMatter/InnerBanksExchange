@@ -11,11 +11,11 @@ const PRIVATE_REF = /\b(my|our|his|her|their)\s+(neighbou?r|landlord|boss|ex|wif
 const NAME_PAIR = /\b([A-Z][a-z]{2,})\s+([A-Z][a-z]{2,})\b/g;
 const NOT_A_PERSON = new Set(['county','town','city','council','board','commission','department','school','schools','hospital','harbor','river','sound','bay','beach','road','street','bridge','port','court','herald','advance','observer','reflector','pilot','virginian','news','north','carolina','virginia','inner','banks','hampton','roads','pitt','chowan','edenton','greenville','norfolk','chesapeake','portsmouth','suffolk','newport','state','federal','planning','district','university','college','records','kit']);
 
-function needsReview(query, region) {
+function needsReview(query, region, extraKnown = []) {
   const q = String(query || '');
   if (ACCUSATION.test(q)) return { hold: true, reason: 'accusation' };
   if (PRIVATE_REF.test(q)) return { hold: true, reason: 'private-person' };
-  const known = new Set(((region && region.places) || []).flatMap((p) => p.toLowerCase().split(/\s+/)));
+  const known = new Set([...((region && region.places) || []), ...extraKnown].flatMap((p) => p.toLowerCase().split(/\s+/)));
   for (const m of q.matchAll(NAME_PAIR)) {
     const [a, b] = [m[1].toLowerCase(), m[2].toLowerCase()];
     if (NOT_A_PERSON.has(a) || NOT_A_PERSON.has(b) || known.has(a) || known.has(b)) continue;

@@ -257,3 +257,22 @@ test('verified feeds are wired; Inner Banks gets TV stories via keywords; dead P
   assert.equal(src('hampton-roads', 'port-of-virginia').feedUrl, null);
   assert.deepEqual(src('hampton-roads', 'wavy').alsoInKeywords, ['inner-banks']);
 });
+
+test('regional names: Tidewater / Southside / the Peninsula / 757 reach Hampton Roads evidence from any region, and are not mistaken for people', async () => {
+  const store = new MemoryStore();
+  await store.putTickerItems('hampton-roads', [{ headline: 'Port traffic rises across Tidewater', summary: 'Cargo up.', publisher: 'WAVY', sourceId: 'wavy', url: 'https://w.example/a', date: '2026-11-12' }]);
+  await store.putTickerItems('inner-banks', []);
+  const h = makeHandlers({ config: baseConfig, store, summarizer: { available: false } });
+  for (const q of ['Tidewater port traffic', 'the 757 port traffic', 'Southside port traffic', 'the Peninsula port traffic', 'Hampton Roads port traffic']) {
+    const r = await h.query({ region: 'inner-banks', type: 'claim', query: q, visitorId: 'a' });
+    assert.ok(!r.held, q); assert.equal(r.sources.length, 1, q);
+  }
+  assert.ok(!(await h.query({ region: 'inner-banks', type: 'claim', query: 'what is happening on the Seven Cities waterfront', visitorId: 'a' })).held);
+  assert.equal((await h.query({ region: 'inner-banks', type: 'claim', query: 'port traffic', visitorId: 'a' })).sources.length, 0);  // no alias, no cross-search
+});
+
+test('subareas: Southside and Peninsula city lists are configured', () => {
+  const sub = baseConfig.regions['hampton-roads'].subareas;
+  for (const c of ['Suffolk', 'Virginia Beach', 'Chesapeake']) assert.ok(sub.southside.includes(c));
+  for (const c of ['Newport News', 'Hampton']) assert.ok(sub.peninsula.includes(c));
+});

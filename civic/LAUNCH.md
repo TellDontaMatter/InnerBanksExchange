@@ -38,5 +38,5 @@ Until step 1 and 3 are done the new bits stay dormant: the ticker request 404s, 
 - Spend data: plug an adapter into `functions/civic/engine/spend.js`. Paid line-level detail needs an entitlement check (Stripe, later).
 
 ## Run it
-- Tests: `cd functions && npm test` (26 tests)
+- Tests: `cd functions && npm test` (28 tests)
 - Local preview with sample data: `node civic/dev-server.js` -> http://localhost:5055 (admin: `/admin.html?dev=1`)

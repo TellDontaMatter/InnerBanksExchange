@@ -24,7 +24,8 @@ async function handleQuery(input, deps) {
   // Log first. Text, region, type, timestamp only; no visitor identity.
   const logEntry = { text: query, region: input.region, type, ts };
 
-  const hold = needsReview(query, region);
+  const everyName = Object.values(config.regions).flatMap((r) => [...(r.places || []), ...(r.aliases || [])]);
+  const hold = needsReview(query, region, everyName);
   if (hold.hold) {
     await store.addLog({ ...logEntry, outcome: 'held' });
     await store.addReview({ text: query, region: input.region, type, reason: hold.reason, ts });
@@ -46,7 +47,10 @@ async function handleQuery(input, deps) {
   }
 
   // claim
-  const evidence = independentSources(await store.searchTicker(input.region, query, 12));
+  // Also search any other region the visitor names by an alias ("Tidewater", "the Peninsula", "Albemarle").
+  const mentioned = Object.entries(config.regions).filter(([id, r]) => id !== input.region && (r.aliases || []).some((a) => new RegExp(`(^|[^a-z0-9])${a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`, 'i').test(query))).map(([id]) => id);
+  const pools = await Promise.all([input.region, ...mentioned].map((id) => store.searchTicker(id, query, 12)));
+  const evidence = independentSources(pools.flat());
   const confidence = confidenceFor(evidence.length);
   const sources = evidence.map((e) => ({ title: e.headline, publisher: e.publisher, url: e.url, date: e.date }));
   const observations = matchSignals(config.signals, input.region, query);   // unconfirmed; never counted toward confidence

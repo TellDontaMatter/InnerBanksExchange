@@ -62,6 +62,7 @@ module.exports = {
     'inner-banks': {
       name: 'Inner Banks',
       home: true,
+      aliases: ['Inner Banks', 'Albemarle', 'Albemarle region', 'Northeast North Carolina', 'Northeastern NC', 'NENC'],
       places: ['Knotts Island', 'Currituck', 'Camden', 'Elizabeth City', 'Pasquotank', 'Perquimans', 'Edenton', 'Chowan County', 'Hertford', 'Bertie', 'Gates', 'Washington County'],
       // Cross-listed sources with alsoInKeywords only contribute stories that mention one of these.
       keywords: ['Edenton', 'Chowan', 'Elizabeth City', 'Pasquotank', 'Perquimans', 'Camden', 'Currituck', 'Knotts Island', 'Albemarle', 'Outer Banks', 'Hertford', 'Winton', 'Bertie', 'Suffolk', 'Virginia Beach', 'Chesapeake', 'Newport News', 'Port of Virginia', 'Newport News Shipbuilding', 'HII', 'US 17', 'U.S. 17', 'Highway 17', 'I-87', 'Interstate 87', 'Sentara', 'Dismal Swamp', 'Chowan River', 'Albemarle Sound'],
@@ -78,7 +79,13 @@ module.exports = {
     },
     'hampton-roads': {
       name: 'Hampton Roads',
-      places: ['Suffolk', 'Virginia Beach', 'Chesapeake', 'Norfolk', 'Portsmouth', 'Newport News', 'Hampton'],
+      // Names people use for the same area. Southside = south of the harbor; Peninsula = north of it.
+      aliases: ['Hampton Roads', 'Tidewater', 'the 757', '757', 'Seven Cities', 'Southside', 'the Peninsula', 'Peninsula', 'HR'],
+      subareas: {
+        southside: ['Norfolk', 'Portsmouth', 'Chesapeake', 'Suffolk', 'Virginia Beach'],
+        peninsula: ['Newport News', 'Hampton', 'Poquoson', 'York County', 'James City County', 'Williamsburg'],
+      },
+      places: ['Suffolk', 'Virginia Beach', 'Chesapeake', 'Norfolk', 'Portsmouth', 'Newport News', 'Hampton', 'Poquoson', 'Williamsburg', 'York County'],
       colours: { ink: '#0e2233', accent: '#1f5f8b', marker: '#d8461a', paper: '#e9eef2' },
       free: { spend: { recordCount: true, latestDate: true, lineDetail: false } },
       sources: [
@@ -98,6 +105,7 @@ module.exports = {
     },
     greenville: {
       name: 'Greenville',
+      aliases: ['Greenville', 'Pitt County', 'East Carolina'],
       places: ['Greenville', 'Pitt County', 'Winterville', 'Ayden', 'Farmville'],
       colours: { ink: '#2a1a33', accent: '#5b3a7a', marker: '#d8461a', paper: '#efeaf2' },
       free: { spend: { recordCount: true, latestDate: true, lineDetail: false } },
