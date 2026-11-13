@@ -194,3 +194,35 @@ test('corridor geography (Virginia Beach to Chowan, north to south) is configure
   await m.summarizeItems({ items: [{ publisher: 'P', headline: 'H' }], anchor: 'Chowan County', audiences: [], corridor: baseConfig.corridor });
   assert.match(body.system, /Virginia Beach \/ Chesapeake > Knotts Island/); assert.match(body.system, /southern end of this corridor/);
 });
+
+test('local observations: unconfirmed, labelled Hypothesis, never counted as sources or toward confidence', async () => {
+  const { h } = await setup({ evidence: [] });
+  const r = await ask(h, 'new businesses in Edenton');
+  assert.equal(r.miss, true); assert.deepEqual(r.sources, []); assert.equal(r.confidence, 'Hypothesis');
+  assert.ok(r.observations.length >= 1);
+  for (const o of r.observations) { assert.equal(o.status, 'Hypothesis'); assert.match(o.basis, /not yet sourced/); assert.ok(o.confirmWith.length > 0); }
+  assert.match(r.summary, /unconfirmed/);
+  assert.ok(r.observations.some((o) => /Tractor Supply/.test(o.text)));
+});
+
+test('local observations: matched by place and tag, per region, and only for queries that touch them', async () => {
+  const { h } = await setup({ evidence: [] });
+  assert.ok((await ask(h, 'is Sentara building something')).observations.some((o) => /Sentara/.test(o.text)));
+  assert.ok((await ask(h, 'new shopping center Elizabeth City Walmart')).observations.some((o) => /shopping center/.test(o.text)));
+  assert.ok((await ask(h, '7 Brew Suffolk')).observations.some((o) => /7 Brew/.test(o.text)));
+  assert.equal((await ask(h, 'bridge closure schedule')).observations.length, 0);
+  const hr = await h.query({ region: 'greenville', type: 'claim', query: '7 Brew Suffolk', visitorId: 'g' });
+  assert.equal(hr.observations.length, 0);
+});
+
+test('local observations ride alongside sourced answers without changing confidence', async () => {
+  const { h } = await setup({ evidence: [ev(1)] });
+  const r = await ask(h, 'Edenton bridge repair new businesses');
+  assert.equal(r.confidence, 'Inferred'); assert.equal(r.sources.length, 1); assert.ok(r.observations.length >= 1);
+});
+
+test('local observations never bypass the review hold', async () => {
+  const { h } = await setup();
+  const r = await ask(h, 'did the Tractor Supply owner in Edenton commit fraud');
+  assert.equal(r.held, true); assert.equal(r.observations, undefined);
+});

@@ -20,6 +20,22 @@ module.exports = {
     order: ['Virginia Beach / Chesapeake', 'Knotts Island (Currituck County)', 'Currituck', 'Camden', 'Pasquotank (Elizabeth City)', 'Perquimans', 'Chowan (Edenton)'],
     note: 'Chowan County is the southern end of this corridor, just before the Chowan River bridge to Bertie County. Hampton Roads news reaches Chowan through the places in between.',
   },
+  // Owner-observed local signals. NOT sourced reporting: they only ever appear as "Hypothesis",
+  // labelled as unconfirmed, and carry what would confirm them. Edit freely; remove once sourced.
+  signals: [
+    { id: 'ecity-shopping-center', regions: ['inner-banks'], place: 'Elizabeth City', tags: ['shopping center', 'retail', 'walmart', 'development', 'new business'],
+      text: 'A new shopping center is going up near the Walmart in Elizabeth City.', observed: '2026-11-13',
+      confirmWith: ['City of Elizabeth City / Pasquotank County planning and permit records', 'The Daily Advance'] },
+    { id: 'sentara-build', regions: ['inner-banks'], place: 'Elizabeth City (location to confirm)', tags: ['sentara', 'hospital', 'health', 'clinic', 'construction', 'development'],
+      text: 'Sentara has a building project under way (exact site and type to confirm).', observed: '2026-11-13',
+      confirmWith: ['Sentara newsroom', 'NC DHSR certificate-of-need filings, if it is a health facility', 'Local permit records'] },
+    { id: 'edenton-new-retail', regions: ['inner-banks'], place: 'Edenton', tags: ['tractor supply', 'dominos', 'domino', 'provalis', 'retail', 'new business', 'chains', 'development'],
+      text: "Edenton has gained a Tractor Supply, a Domino's, \"Provalis\" (name as reported; spelling to confirm) and a handful of new small local businesses.", observed: '2026-11-13',
+      confirmWith: ['Town of Edenton planning and zoning records', 'Chowan Herald', 'Chowan County business license / permit records'] },
+    { id: 'suffolk-7-brew', regions: ['inner-banks', 'hampton-roads'], place: 'Suffolk', tags: ['7 brew', 'coffee', 'drive-thru', 'retail', 'new business', 'development'],
+      text: 'A 7 Brew drive-thru coffee shop is coming to Suffolk. Small on its own; the owner reads it as a sign of bigger growth along the corridor.', observed: '2026-11-13',
+      confirmWith: ['City of Suffolk planning commission / site-plan records', 'Suffolk News-Herald'] },
+  ],
   // Reader groups the "why it matters" line may speak to, only when an item clearly bears on them.
   audiences: [
     'Newport News Shipbuilding workers and retirees who live in the Inner Banks',

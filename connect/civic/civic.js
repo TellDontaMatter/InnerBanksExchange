@@ -73,6 +73,17 @@
       r.sources.forEach(function (s) { ul.appendChild(el('li', {}, [el('a', { href: safeHref(s.url), rel: 'noopener', target: '_blank', text: s.title }), el('span', { class: 'muted', text: ' — ' + s.publisher + (s.date ? ', ' + s.date.slice(0, 10) : '') })])); });
       card.appendChild(el('h2', { text: 'Sources' })); card.appendChild(ul);
     }
+    if (r.observations && r.observations.length) {
+      card.appendChild(el('h2', { text: 'Local observations' }));
+      card.appendChild(el('p', { class: 'muted', text: 'Noticed by people on the ground. Not yet backed by a source, so treat as unconfirmed.' }));
+      var ol = el('ul', { class: 'sources' });
+      r.observations.forEach(function (o) {
+        var li = el('li', {}, [el('span', { class: 'label', text: 'Hypothesis' }), el('span', { text: ' ' + o.text })]);
+        if (o.confirmWith && o.confirmWith.length) li.appendChild(el('div', { class: 'muted', text: 'Would be confirmed by: ' + o.confirmWith.join('; ') }));
+        ol.appendChild(li);
+      });
+      card.appendChild(ol);
+    }
     if (!r.held) card.appendChild(el('p', { class: 'muted', style: 'margin-top:12px', text: 'This answer is automated and has not been reviewed by a person.' }));
     box.appendChild(card);
   }

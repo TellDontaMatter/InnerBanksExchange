@@ -2,6 +2,7 @@
 const { needsReview } = require('./review');
 const { reserve } = require('./caps');
 const { independentSources, confidenceFor } = require('./confidence');
+const { matchSignals } = require('./signals');
 
 const err = (m) => Object.assign(new Error(m), { status: 400 });
 
@@ -48,25 +49,27 @@ async function handleQuery(input, deps) {
   const evidence = independentSources(await store.searchTicker(input.region, query, 12));
   const confidence = confidenceFor(evidence.length);
   const sources = evidence.map((e) => ({ title: e.headline, publisher: e.publisher, url: e.url, date: e.date }));
+  const observations = matchSignals(config.signals, input.region, query);   // unconfirmed; never counted toward confidence
   if (!evidence.length) {
     await store.addLog({ ...logEntry, outcome: 'miss' });
-    return { ...base, summary: 'We have no sourced reporting on this yet.', sources: [], confidence, miss: true, automated: true };
+    return { ...base, summary: observations.length ? 'We have no sourced reporting on this yet. People on the ground have noticed the items below; treat them as unconfirmed.' : 'We have no sourced reporting on this yet.',
+      sources: [], observations, confidence, miss: true, automated: true };
   }
   if (!summarizer.available) {
     await store.addLog({ ...logEntry, outcome: 'no-model' });
-    return { ...base, summary: `We found ${sources.length} source${sources.length === 1 ? '' : 's'} on this. Written summaries are off for now, so the links below go to the original reporting.`, sources, confidence, automated: true };
+    return { ...base, summary: `We found ${sources.length} source${sources.length === 1 ? '' : 's'} on this. Written summaries are off for now, so the links below go to the original reporting.`, sources, observations, confidence, automated: true };
   }
   const q = await reserve(store, { visitorId: input.visitorId, limits: config.limits, now: now() });
   if (!q.ok) {
     await store.addLog({ ...logEntry, outcome: `capped-${q.reason}` });
     const why = q.reason === 'visitor' ? "You've reached today's limit of summaries." : "We've reached today's limit of summaries.";
-    return { ...base, summary: `${why} Sources are listed below; try again tomorrow.`, sources, confidence, capped: q.reason, automated: true };
+    return { ...base, summary: `${why} Sources are listed below; try again tomorrow.`, sources, observations, confidence, capped: q.reason, automated: true };
   }
   let summary;
   try { summary = await summarizer.summarize({ region: input.region, query, evidence }); }
   catch (e) { summary = 'Summary unavailable right now. Sources are listed below.'; }
   await store.addLog({ ...logEntry, outcome: 'answered' });
-  return { ...base, summary, sources, confidence, automated: true };
+  return { ...base, summary, sources, observations, confidence, automated: true };
 }
 
 /** "Request this place" form. Email is optional and only stored if volunteered. */
