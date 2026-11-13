@@ -30,9 +30,14 @@ async function runTicker({ config, store, summarizer, fetchImpl = fetch, now = (
         const res = await fetchWithTimeout(fetchImpl, src.feedUrl);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const parsed = parseFeed(await res.text()).slice(0, config.ticker.itemsPerSource);
-        for (const target of [rid, ...(src.alsoIn || [])]) {
+        const targets = [[rid, false], ...(src.alsoIn || []).map((t) => [t, false]), ...(src.alsoInKeywords || []).map((t) => [t, true])];
+        for (const [target, filtered] of targets) {
           if (!byRegion[target]) continue;
-          for (const p of parsed) byRegion[target].push({ sourceId: src.id, group: src.group, publisher: src.name, headline: p.headline, url: p.link, date: p.date, snippet: p.snippet });
+          const kws = filtered ? (config.regions[target].keywords || []).map((k) => k.toLowerCase()) : null;
+          for (const p of parsed) {
+            if (kws && !kws.some((k) => `${p.headline} ${p.snippet}`.toLowerCase().includes(k))) continue;   // not about this region
+            byRegion[target].push({ sourceId: src.id, group: src.group, publisher: src.name, headline: p.headline, url: p.link, date: p.date, snippet: p.snippet });
+          }
         }
       } catch (e) { report.errors.push(`${rid}/${src.id}: ${e.message}`); }
     }

@@ -24,7 +24,7 @@ Until step 1 and 3 are done the new bits stay dormant: the ticker request 404s, 
 
 ## Blocking / needs you
 1. **Model API key: deferred by choice.** Launching without it. Search lists matching sources (with confidence) and no written summary; the ticker shows headlines and links only. To switch summaries on later: `firebase functions:secrets:set ANTHROPIC_API_KEY`, then redeploy. No code change.
-2. **Verify the ticker sources.** The build sandbox could not reach the publishers, so no feed is wired. From a normal machine run `node functions/civic/scripts/check-sources.js`, then paste each `feedUrl` into `functions/civic/config/regions.js`. Still need a URL for: Chowan Herald and Albemarle Observer. City sites were added from best-known domains (Suffolk, Virginia Beach, Chesapeake, Newport News, HII, Elizabeth City); the checker will say which are wrong (Chesapeake's domain especially). The ticker is empty until feeds are set.
+2. **Ticker sources (checked from Muse's machine, Nov 13, against an older checkout).** Wired in: WAVY, WTKR, 13News Now (Hampton Roads), WITN, WNCT, ECU news (Greenville). Hampton Roads TV and the Virginian-Pilot also feed the Inner Banks ticker, but only stories that mention the corridor (`alsoInKeywords` + the `keywords` list in config). Port of Virginia's feed works but its newest item is Sep 2023, so it is not wired. Still to do: **re-run `check-sources.js` after pulling the latest branch** (the first run predates the Suffolk, Virginia Beach, Chesapeake, Newport News, HII and Elizabeth City sources); URLs needed for Chowan Herald and Albemarle Observer; manual feed look for Daily Advance, Chowan County, Virginian-Pilot, HRPDC, Daily Reflector, Pitt County; re-check Town of Edenton and City of Greenville (unreachable from Muse's VM).
 3. **Billing:** Blaze is on; set a budget alert before enabling the schedule.
 
 ## Should do before launch
@@ -38,5 +38,5 @@ Until step 1 and 3 are done the new bits stay dormant: the ticker request 404s, 
 - Spend data: plug an adapter into `functions/civic/engine/spend.js`. Paid line-level detail needs an entitlement check (Stripe, later).
 
 ## Run it
-- Tests: `cd functions && npm test` (24 tests)
+- Tests: `cd functions && npm test` (26 tests)
 - Local preview with sample data: `node civic/dev-server.js` -> http://localhost:5055 (admin: `/admin.html?dev=1`)

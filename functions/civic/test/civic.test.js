@@ -235,3 +235,25 @@ test('field observations (farming, Bojangles/US 17) are logged as unconfirmed an
     assert.ok(r.observations.every((o) => o.status === 'Hypothesis' && o.confirmWith.length));
   }
 });
+
+test('alsoInKeywords: a Hampton Roads TV feed reaches the Inner Banks ticker only for stories that mention the corridor', async () => {
+  const cfg = JSON.parse(JSON.stringify(baseConfig));
+  cfg.regions['hampton-roads'].sources.find((s) => s.id === 'wavy').feedUrl = 'https://feed7.example/rss';
+  const feed = `<rss><channel>
+    <item><title>Suffolk bridge closure planned for US 17</title><link>https://x.example/a</link><pubDate>Fri, 13 Nov 2026 02:00:00 GMT</pubDate><description>Crews will close lanes.</description></item>
+    <item><title>Norfolk police investigate downtown theft</title><link>https://x.example/b</link><pubDate>Fri, 13 Nov 2026 01:00:00 GMT</pubDate><description>Officers responded Thursday.</description></item>
+    <item><title>Weekend forecast</title><link>https://x.example/c</link><pubDate>Fri, 13 Nov 2026 00:00:00 GMT</pubDate><description>Sentara opens a new clinic.</description></item></channel></rss>`;
+  const store = new MemoryStore();
+  await runTicker({ config: cfg, store, summarizer: { available: false }, fetchImpl: async () => ({ ok: true, status: 200, text: async () => feed }) });
+  const hr = await store.listTicker('hampton-roads'); const ib = await store.listTicker('inner-banks');
+  assert.equal(hr.length, 3);
+  assert.deepEqual(ib.map((i) => i.url).sort(), ['https://x.example/a', 'https://x.example/c']);   // snippet match counts; the Norfolk theft story is left out
+  assert.ok(ib.every((i) => i.askHref.startsWith('results.html?r=inner-banks')));
+});
+
+test('verified feeds are wired; Inner Banks gets TV stories via keywords; dead Port feed is not wired', () => {
+  const src = (r, id) => baseConfig.regions[r].sources.find((s) => s.id === id);
+  for (const [r, id] of [['hampton-roads', 'wavy'], ['hampton-roads', 'wtkr'], ['hampton-roads', '13newsnow'], ['greenville', 'witn'], ['greenville', 'wnct'], ['greenville', 'ecu-news']]) assert.ok(src(r, id).feedUrl, id);
+  assert.equal(src('hampton-roads', 'port-of-virginia').feedUrl, null);
+  assert.deepEqual(src('hampton-roads', 'wavy').alsoInKeywords, ['inner-banks']);
+});

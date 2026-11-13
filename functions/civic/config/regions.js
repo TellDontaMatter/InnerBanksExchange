@@ -63,6 +63,8 @@ module.exports = {
       name: 'Inner Banks',
       home: true,
       places: ['Knotts Island', 'Currituck', 'Camden', 'Elizabeth City', 'Pasquotank', 'Perquimans', 'Edenton', 'Chowan County', 'Hertford', 'Bertie', 'Gates', 'Washington County'],
+      // Cross-listed sources with alsoInKeywords only contribute stories that mention one of these.
+      keywords: ['Edenton', 'Chowan', 'Elizabeth City', 'Pasquotank', 'Perquimans', 'Camden', 'Currituck', 'Knotts Island', 'Albemarle', 'Outer Banks', 'Hertford', 'Winton', 'Bertie', 'Suffolk', 'Virginia Beach', 'Chesapeake', 'Newport News', 'Port of Virginia', 'Newport News Shipbuilding', 'HII', 'US 17', 'U.S. 17', 'Highway 17', 'I-87', 'Interstate 87', 'Sentara', 'Dismal Swamp', 'Chowan River', 'Albemarle Sound'],
       colours: { ink: '#10222a', accent: '#1d5c60', marker: '#d8461a', paper: '#ecefe9' },
       free: { spend: { recordCount: true, latestDate: true, lineDetail: false } },
       sources: [
@@ -80,12 +82,12 @@ module.exports = {
       colours: { ink: '#0e2233', accent: '#1f5f8b', marker: '#d8461a', paper: '#e9eef2' },
       free: { spend: { recordCount: true, latestDate: true, lineDetail: false } },
       sources: [
-        { id: 'virginian-pilot', name: 'The Virginian-Pilot', site: 'https://www.pilotonline.com', feedUrl: null },
-        { id: 'wavy', name: 'WAVY', site: 'https://www.wavy.com', feedUrl: null },
-        { id: 'wtkr', name: 'WTKR', site: 'https://www.wtkr.com', feedUrl: null },
-        { id: '13newsnow', name: '13News Now', site: 'https://www.13newsnow.com', feedUrl: null },
+        { id: 'virginian-pilot', name: 'The Virginian-Pilot', site: 'https://www.pilotonline.com', feedUrl: null, alsoInKeywords: ['inner-banks'] },
+        { id: 'wavy', name: 'WAVY', site: 'https://www.wavy.com', feedUrl: 'https://www.wavy.com/feed', alsoInKeywords: ['inner-banks'] },
+        { id: 'wtkr', name: 'WTKR', site: 'https://www.wtkr.com', feedUrl: 'https://www.wtkr.com/index.rss', alsoInKeywords: ['inner-banks'] },
+        { id: '13newsnow', name: '13News Now', site: 'https://www.13newsnow.com', feedUrl: 'https://www.13newsnow.com/feeds/syndication/rss/news', alsoInKeywords: ['inner-banks'] },
         // alsoIn: these also feed the Inner Banks ticker and search (they affect the Inner Banks most).
-        { id: 'port-of-virginia', name: 'Port of Virginia', site: 'https://www.portofvirginia.com', feedUrl: null, alsoIn: ['inner-banks'] },
+        { id: 'port-of-virginia', name: 'Port of Virginia', site: 'https://www.portofvirginia.com', feedUrl: null, alsoIn: ['inner-banks'], note: 'Feed exists (/feed/) but newest item is Sep 2023; not wired in.' },
         { id: 'city-suffolk', name: 'City of Suffolk', site: 'https://www.suffolkva.us', feedUrl: null, alsoIn: ['inner-banks'] },
         { id: 'city-virginia-beach', name: 'City of Virginia Beach', site: 'https://www.vbgov.com', feedUrl: null, alsoIn: ['inner-banks'] },
         { id: 'city-chesapeake', name: 'City of Chesapeake', site: 'https://www.cityofchesapeake.net', feedUrl: null, alsoIn: ['inner-banks'], note: 'Check the domain; may be chesapeakeva.gov.' },
@@ -101,11 +103,11 @@ module.exports = {
       free: { spend: { recordCount: true, latestDate: true, lineDetail: false } },
       sources: [
         { id: 'daily-reflector', name: 'The Daily Reflector', site: 'https://www.reflector.com', feedUrl: null },
-        { id: 'witn', name: 'WITN', site: 'https://www.witn.com', feedUrl: null },
-        { id: 'wnct', name: 'WNCT', site: 'https://www.wnct.com', feedUrl: null },
+        { id: 'witn', name: 'WITN', site: 'https://www.witn.com', feedUrl: 'https://www.witn.com/arc/outboundfeeds/rss/?outputType=xml' },
+        { id: 'wnct', name: 'WNCT', site: 'https://www.wnct.com', feedUrl: 'https://www.wnct.com/feed' },
         { id: 'city-greenville', name: 'City of Greenville', site: 'https://www.greenvillenc.gov', feedUrl: null },
         { id: 'pitt-county', name: 'Pitt County', site: 'https://www.pittcountync.gov', feedUrl: null },
-        { id: 'ecu-news', name: 'ECU news', site: 'https://news.ecu.edu', feedUrl: null },
+        { id: 'ecu-news', name: 'ECU news', site: 'https://news.ecu.edu', feedUrl: 'https://news.ecu.edu/feed' },
       ],
     },
   },
