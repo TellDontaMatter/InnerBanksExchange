@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Inner Banks Exchange — Shop (Back End)</title>
+  <style>
+    :root { --bg:#0b0b0f; --card:#14141c; --accent:#00ffcc; --text:#f0f0f5; --muted:#8a8a9e; --border:#262636; --danger:#ff4444; --warn:#ffb020; }
+    * { box-sizing: border-box; }
+    body { background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; margin:0; padding:20px; }
+    .container { max-width:720px; margin:24px auto; }
+    header { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+    h2 { margin:0; color:var(--accent); font-size:1.5rem; }
+    #conn { font:.85rem monospace; color:var(--muted); }
+    input, select, button { font:inherit; font-size:1rem; color:var(--text); background:#1e1e28; border:1px solid var(--border); border-radius:6px; padding:10px 12px; min-height:44px; }
+    button { cursor:pointer; touch-action:manipulation; }
+    button.primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:700; }
+    button.danger { color:var(--danger); }
+    #login { display:grid; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+    #login p { margin:0; color:var(--muted); }
+    #list { display:grid; gap:10px; }
+    .item { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px; display:grid; gap:10px; }
+    .row { display:flex; gap:12px; align-items:flex-start; }
+    .badge { position:relative; flex-shrink:0; }
+    .badge span { position:absolute; right:2px; bottom:2px; background:#000c; color:var(--accent); font:600 11px monospace; padding:1px 6px; border-radius:4px; }
+    .controls a { display:inline-flex; align-items:center; color:var(--accent); text-decoration:none; padding:0 8px; font-size:.9rem; }
+    .thumb { width:72px; height:72px; border-radius:8px; object-fit:cover; border:1px solid var(--border); flex-shrink:0; background:#1e1e28; }
+    .grow { flex:1; min-width:0; }
+    .name { font-weight:600; overflow-wrap:anywhere; }
+    .cat { color:var(--muted); font-size:.85rem; }
+    .price { font:600 1.1rem monospace; color:var(--accent); }
+    .controls { display:flex; gap:8px; }
+    .controls select { flex:1; }
+    .empty { text-align:center; color:var(--muted); border:1.5px dashed var(--border); border-radius:10px; padding:28px 16px; }
+    .bad { color:var(--danger); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header><h2>Shop · Back End</h2><span id="conn">locked</span></header>
+
+    <form id="login">
+      <p>Enter the admin password to manage the shop.</p>
+      <input type="password" id="token" placeholder="Admin password" autocomplete="current-password">
+      <button class="primary" type="submit">Unlock</button>
+      <p class="bad" id="login-err" role="alert"></p>
+    </form>
+
+    <div id="list" hidden></div>
+  </div>
+
+  <script>
+    const loginEl = document.getElementById('login'), listEl = document.getElementById('list'), connEl = document.getElementById('conn');
+    const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' });
+    let token = '';
+    try { token = sessionStorage.getItem('ibx-admin') || ''; } catch {}
+    let timer = null;
+
+    function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+    async function api(path, opts = {}) {
+      const res = await fetch(path, { ...opts, headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' } });
+      if (res.status === 204) return null;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { const e = new Error(data.error || 'Request failed (' + res.status + ')'); e.status = res.status; throw e; }
+      return data;
+    }
+
+    function render(items) {
+      listEl.replaceChildren();
+      if (!items.length) { listEl.append(el('div', 'empty', 'No items yet. Items submitted on the intake page appear here.')); return; }
+      for (const it of items) {
+        const card = el('div', 'item'), row = el('div', 'row');
+        if (it.photoCount > 0) { const wrap = el('div', 'badge'); const img = el('img', 'thumb'); img.src = '/api/items/' + it.id + '/photos/0'; img.alt = it.name; img.loading = 'lazy'; wrap.append(img); if (it.photoCount > 1) wrap.append(el('span', '', it.photoCount + ' photos')); row.append(wrap); }
+        const info = el('div', 'grow');
+        info.append(el('div', 'name', it.name), el('div', 'cat', it.category), el('div', 'cat', new Date(it.createdAt).toLocaleString()));
+        row.append(info, el('div', 'price', money.format(it.price)));
+
+        const controls = el('div', 'controls');
+        const sel = el('select'); sel.setAttribute('aria-label', 'Status of ' + it.name);
+        for (const s of ['Available', 'Pending', 'Reserved']) { const o = el('option', '', s); o.value = s; if (s === it.status) o.selected = true; sel.append(o); }
+        sel.onchange = async () => { try { await api('/api/items/' + it.id, { method: 'PATCH', body: JSON.stringify({ status: sel.value }) }); } catch (e) { connEl.textContent = e.message; } };
+        const del = el('button', 'danger', 'Delete');
+        del.onclick = async () => {
+          if (!del.dataset.armed) { del.dataset.armed = '1'; del.textContent = 'Tap again to delete'; setTimeout(() => { del.dataset.armed = ''; del.textContent = 'Delete'; }, 3000); return; }
+          try { await api('/api/items/' + it.id, { method: 'DELETE' }); load(); } catch (e) { connEl.textContent = e.message; }
+        };
+        const shareUrl = location.origin + '/item/' + it.id;
+        const share = el('button', '', 'Share');
+        share.onclick = async () => {
+          const text = it.name + ' — ' + money.format(it.price);
+          try { if (navigator.share) { await navigator.share({ title: it.name, text, url: shareUrl }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+          try { await navigator.clipboard.writeText(shareUrl); share.textContent = 'Link copied'; } catch { share.textContent = 'Open card to copy'; }
+          setTimeout(() => { share.textContent = 'Share'; }, 2500);
+        };
+        const open = el('a', '', 'Card'); open.href = shareUrl; open.target = '_blank'; open.rel = 'noopener';
+        controls.append(sel, share, open, del);
+        card.append(row, controls); listEl.append(card);
+      }
+    }
+
+    async function load() {
+      try {
+        const items = await api('/api/items');
+        loginEl.hidden = true; listEl.hidden = false;
+        connEl.textContent = 'live · ' + items.length + ' items';
+        render(items);
+        if (!timer) timer = setInterval(() => { if (document.visibilityState === 'visible') load(); }, 10000);
+      } catch (e) {
+        if (timer) { clearInterval(timer); timer = null; }
+        if (e.status === 401) {
+          loginEl.hidden = false; listEl.hidden = true; connEl.textContent = 'locked';
+          document.getElementById('login-err').textContent = token ? 'Wrong password, or admin access is not set up yet.' : '';
+          try { sessionStorage.removeItem('ibx-admin'); } catch {}
+        } else { connEl.textContent = 'error: ' + e.message; }
+      }
+    }
+
+    loginEl.addEventListener('submit', (e) => {
+      e.preventDefault();
+      token = document.getElementById('token').value;
+      try { sessionStorage.setItem('ibx-admin', token); } catch {}
+      load();
+    });
+    if (token) load();
+  </script>
+</body>
+</html>
