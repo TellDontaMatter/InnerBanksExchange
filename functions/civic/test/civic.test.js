@@ -202,7 +202,7 @@ test('local observations: unconfirmed, labelled Hypothesis, never counted as sou
   assert.ok(r.observations.length >= 1);
   for (const o of r.observations) { assert.equal(o.status, 'Hypothesis'); assert.match(o.basis, /not yet sourced/); assert.ok(o.confirmWith.length > 0); }
   assert.match(r.summary, /unconfirmed/);
-  assert.ok(r.observations.some((o) => /Tractor Supply/.test(o.text)) && r.observations.some((o) => /Provalis/.test(o.text)));
+  assert.ok(r.observations.some((o) => /Tractor Supply/.test(o.text)) && r.observations.some((o) => /Provalus/.test(o.text)));
 });
 
 test('local observations: matched by place and tag, per region, and only for queries that touch them', async () => {
