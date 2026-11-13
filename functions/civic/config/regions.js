@@ -79,11 +79,11 @@ module.exports = {
     },
     'hampton-roads': {
       name: 'Hampton Roads',
-      // Names people use for the same area. Southside = south of the harbor; Peninsula = north of it.
+      // Names people use for the same area. Southside = the Norfolk side of the Hampton Roads Bridge-Tunnel; Peninsula = Hampton and Newport News.
       aliases: ['Hampton Roads', 'Tidewater', 'the 757', '757', 'Seven Cities', 'Southside', 'the Peninsula', 'Peninsula', 'HR'],
       subareas: {
         southside: ['Norfolk', 'Portsmouth', 'Chesapeake', 'Suffolk', 'Virginia Beach'],
-        peninsula: ['Newport News', 'Hampton', 'Poquoson', 'York County', 'James City County', 'Williamsburg'],
+        peninsula: ['Newport News', 'Hampton'],
       },
       places: ['Suffolk', 'Virginia Beach', 'Chesapeake', 'Norfolk', 'Portsmouth', 'Newport News', 'Hampton', 'Poquoson', 'Williamsburg', 'York County'],
       colours: { ink: '#0e2233', accent: '#1f5f8b', marker: '#d8461a', paper: '#e9eef2' },
