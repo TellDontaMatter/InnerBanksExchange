@@ -1,0 +1,87 @@
+<script>
+/* Today panel: search on top (prefilled from the ticker) + fading pages of board data and engine output.
+   Self-contained; leaves the board/weather script above untouched. */
+(function () {
+  'use strict';
+  var SITE = '';                    // same origin: /civic/ pages are served by this site
+  var API = '';                     // same origin: Hosting rewrites /api/** to the civicApi function
+  var panel = document.querySelector('.ledger.live'), slidesEl = document.getElementById('slides');
+  if (!panel || !slidesEl) return;
+  var all = [].slice.call(slidesEl.querySelectorAll('.slide'));
+  var ready = { today: true, civic: false };
+  var cur = 0, timer = null, paused = false, hold = false, INTERVAL = 9000, PER_PAGE = 2;
+  var items = [], page = 0, dirty = false, shown = null;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var dots = document.getElementById('slideDots'), pp = document.getElementById('slidePP'), form = document.getElementById('csForm'), qIn = document.getElementById('csQ');
+  function el(t, p, txt) { var n = document.createElement(t); Object.keys(p || {}).forEach(function (k) { n.setAttribute(k, p[k]); }); if (txt) n.textContent = txt; return n; }
+  function safe(u) { return /^https?:\/\//.test(u) ? u : '#'; }
+  function question(it) { try { return new URLSearchParams(it.askHref.split('?')[1]).get('q') || ''; } catch (e) { return ''; } }
+  function active() { return all.filter(function (sl) { return ready[sl.getAttribute('data-slide')]; }); }
+
+  // Prefill: fades out, swaps, fades in. Stops the moment the visitor types their own question.
+  function setPrefill(text) {
+    if (dirty || !text || qIn.value === text) return;
+    if (reduce || !qIn.value) { qIn.value = text; return; }
+    qIn.classList.add('swap');
+    setTimeout(function () { if (!dirty) qIn.value = text; qIn.classList.remove('swap'); }, 350);
+  }
+  qIn.addEventListener('input', function () { dirty = true; });
+
+  function renderPage() {
+    var list = document.getElementById('cvList'); list.textContent = '';
+    var start = (page * PER_PAGE) % items.length, chunk = [];
+    for (var i = 0; i < Math.min(PER_PAGE, items.length); i++) chunk.push(items[(start + i) % items.length]);
+    chunk.forEach(function (it) {
+      var row = el('div', { class: 'ci' });
+      row.appendChild(el('a', { class: 'hl', href: SITE + '/civic/' + it.askHref, title: 'Ask about this' }, it.headline));
+      row.appendChild(el('div', { class: 'm' }, it.publisher + (it.why ? ' · ' + it.why : '')));
+      row.appendChild(el('a', { class: 'o', href: safe(it.url), rel: 'noopener', target: '_blank' }, 'Read the original ↗'));
+      list.appendChild(row);
+    });
+    var n = el('p', { class: 'cnote' }, 'Automated: read from public sources daily and summarized by software. ');
+    n.appendChild(el('a', { class: 'o', href: SITE + '/civic/region.html?r=inner-banks' }, 'See all'));
+    list.appendChild(n);
+    setPrefill(question(chunk[0]));
+  }
+
+  function paint() {
+    var act = active(); if (cur >= act.length) cur = 0;
+    var target = act[cur], name = target.getAttribute('data-slide');
+    if (name === 'civic' && shown !== 'civic') { renderPage(); page++; }   // new items each time the page comes round
+    shown = name;
+    all.forEach(function (sl) { var on = sl === target; sl.classList.toggle('is-on', on); if (on) sl.removeAttribute('inert'); else sl.setAttribute('inert', ''); sl.setAttribute('aria-hidden', on ? 'false' : 'true'); });
+    dots.textContent = '';
+    act.forEach(function (sl, i) {
+      var b = el('button', { class: 'dot', type: 'button', 'aria-label': 'Show ' + sl.getAttribute('aria-label') });
+      if (i === cur) b.setAttribute('aria-current', 'true');
+      b.addEventListener('click', function () { cur = i; paint(); restart(); });
+      dots.appendChild(b);
+    });
+    var ctl = document.querySelector('.slide-ctl'); if (ctl) ctl.style.display = act.length > 1 ? '' : 'none';
+  }
+  function next() { cur = (cur + 1) % active().length; paint(); }
+  function stop() { clearInterval(timer); timer = null; }
+  function restart() { stop(); if (!paused && !hold && !reduce && active().length > 1) timer = setInterval(next, INTERVAL); }
+  pp.addEventListener('click', function () { paused = !paused; pp.textContent = paused ? 'Play' : 'Pause'; pp.setAttribute('aria-pressed', String(paused)); restart(); });
+  panel.addEventListener('mouseenter', function () { hold = true; restart(); });
+  panel.addEventListener('mouseleave', function () { hold = false; restart(); });
+  panel.addEventListener('focusin', function () { hold = true; restart(); });
+  panel.addEventListener('focusout', function (e) { if (!panel.contains(e.relatedTarget)) { hold = false; restart(); } });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); else restart(); });
+  if (reduce) { paused = true; pp.textContent = 'Play'; pp.setAttribute('aria-pressed', 'true'); }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault(); var q = qIn.value.trim(); if (!q) return;
+    location.href = SITE + '/civic/results.html?r=' + encodeURIComponent(form.r.value) + '&type=' + encodeURIComponent(form.type.value) + '&q=' + encodeURIComponent(q);
+  });
+
+  // Engine output: the daily ticker. The page only joins the rotation (and the prefill only appears) once there are items.
+  fetch(API + '/api/ticker?region=inner-banks').then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (d) {
+    items = (d.items || []).filter(function (it) { return it.askHref && it.headline; }).slice(0, 8); if (!items.length) return;
+    qIn.value = question(items[0]);       // first view: prefill from the newest item, no fade
+    ready.civic = true; paint(); restart();
+  }).catch(function () { /* ticker unavailable: plain search box, board data only */ });
+
+  paint(); restart();
+})();
+</script>

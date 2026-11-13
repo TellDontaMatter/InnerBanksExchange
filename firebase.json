@@ -28,6 +28,15 @@
                 "netlify.toml",
                 "**/.*",
                 "**/node_modules/**"
+            ],
+            "rewrites": [
+                {
+                    "source": "/api/**",
+                    "function": {
+                        "functionId": "civicApi",
+                        "region": "us-central1"
+                    }
+                }
             ]
         },
         {
