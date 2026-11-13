@@ -65,7 +65,7 @@ module.exports = {
       aliases: ['Inner Banks', 'Albemarle', 'Albemarle region', 'Northeast North Carolina', 'Northeastern NC', 'NENC'],
       places: ['Knotts Island', 'Currituck', 'Camden', 'Elizabeth City', 'Pasquotank', 'Perquimans', 'Edenton', 'Chowan County', 'Hertford', 'Bertie', 'Gates', 'Washington County'],
       // Cross-listed sources with alsoInKeywords only contribute stories that mention one of these.
-      keywords: ['Edenton', 'Chowan', 'Elizabeth City', 'Pasquotank', 'Perquimans', 'Camden', 'Currituck', 'Knotts Island', 'Pungo', 'Creeds', 'Sandbridge', 'Blackwater', 'Fentress', 'Princess Anne', 'Albemarle', 'Outer Banks', 'Hertford', 'Winton', 'Bertie', 'Suffolk', 'Virginia Beach', 'Chesapeake', 'Newport News', 'Port of Virginia', 'Newport News Shipbuilding', 'HII', 'US 17', 'U.S. 17', 'Highway 17', 'I-87', 'Interstate 87', 'Sentara', 'Dismal Swamp', 'Chowan River', 'Albemarle Sound'],
+      keywords: ['Edenton', 'Chowan', 'Elizabeth City', 'Pasquotank', 'Perquimans', 'Camden', 'Currituck', 'Knotts Island', 'Pungo', 'Creeds', 'Sandbridge', 'Blackwater', 'Fentress', 'Princess Anne', 'Indian River Road', 'Pungo Ferry', 'Desert Road', 'Albemarle', 'Outer Banks', 'Hertford', 'Winton', 'Bertie', 'Suffolk', 'Virginia Beach', 'Chesapeake', 'Newport News', 'Port of Virginia', 'Newport News Shipbuilding', 'HII', 'US 17', 'U.S. 17', 'Highway 17', 'I-87', 'Interstate 87', 'Sentara', 'Dismal Swamp', 'Chowan River', 'Albemarle Sound'],
       colours: { ink: '#10222a', accent: '#1d5c60', marker: '#d8461a', paper: '#ecefe9' },
       free: { spend: { recordCount: true, latestDate: true, lineDetail: false } },
       sources: [
@@ -85,7 +85,7 @@ module.exports = {
         southside: ['Norfolk', 'Portsmouth', 'Chesapeake', 'Suffolk', 'Virginia Beach'],
         peninsula: ['Newport News', 'Hampton'],
       },
-      places: ['Pungo', 'Creeds', 'Sandbridge', 'Fentress', 'Princess Anne', 'Suffolk', 'Virginia Beach', 'Chesapeake', 'Norfolk', 'Portsmouth', 'Newport News', 'Hampton', 'Poquoson', 'Williamsburg', 'York County'],
+      places: ['Pungo', 'Creeds', 'Sandbridge', 'Fentress', 'Princess Anne', 'Indian River', 'Pungo Ferry', 'Desert Road', 'Blackwater Road', 'Suffolk', 'Virginia Beach', 'Chesapeake', 'Norfolk', 'Portsmouth', 'Newport News', 'Hampton', 'Poquoson', 'Williamsburg', 'York County'],
       colours: { ink: '#0e2233', accent: '#1f5f8b', marker: '#d8461a', paper: '#e9eef2' },
       free: { spend: { recordCount: true, latestDate: true, lineDetail: false } },
       sources: [

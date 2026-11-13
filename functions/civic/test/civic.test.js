@@ -278,9 +278,9 @@ test('subareas: Southside and Peninsula city lists are configured', () => {
 });
 
 test('the rural south of Virginia Beach/Chesapeake (Pungo, Creeds, Sandbridge) is a known gateway: place names, ticker keywords, not mistaken for people', async () => {
-  for (const n of ['Pungo', 'Creeds', 'Sandbridge', 'Fentress', 'Princess Anne']) assert.ok(baseConfig.regions['hampton-roads'].places.includes(n), n);
+  for (const n of ['Pungo', 'Creeds', 'Sandbridge', 'Fentress', 'Princess Anne', 'Indian River', 'Pungo Ferry', 'Desert Road', 'Blackwater Road']) assert.ok(baseConfig.regions['hampton-roads'].places.includes(n), n);
   for (const n of ['Pungo', 'Creeds', 'Sandbridge']) assert.ok(baseConfig.regions['inner-banks'].keywords.includes(n), n);
   assert.match(baseConfig.corridor.note, /Pungo/);
   const { h } = await setup({ evidence: [] });
-  assert.ok(!(await ask(h, 'road work in Princess Anne and Pungo')).held);
+  assert.ok(!(await ask(h, 'road work on Indian River Road and Pungo Ferry Road near Desert Road')).held);
 });
