@@ -54,7 +54,7 @@ async function handleQuery(input, deps) {
   }
   if (!summarizer.available) {
     await store.addLog({ ...logEntry, outcome: 'no-model' });
-    return { ...base, summary: 'Automated summaries are not switched on yet. Sources are listed below.', sources, confidence, automated: true };
+    return { ...base, summary: `We found ${sources.length} source${sources.length === 1 ? '' : 's'} on this. Written summaries are off for now, so the links below go to the original reporting.`, sources, confidence, automated: true };
   }
   const q = await reserve(store, { visitorId: input.visitorId, limits: config.limits, now: now() });
   if (!q.ok) {
