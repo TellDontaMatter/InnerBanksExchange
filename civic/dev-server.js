@@ -33,6 +33,7 @@ const rows = [['Sample News A', 'Edenton bridge repair schedule announced', 'Cre
         return send(404, { error: 'not found' });
       } catch (e) { return send(e.status || 500, { error: e.message }); }
     }
+    if (u.pathname === '/connect') return send(200, fs.readFileSync(path.join(__dirname, '..', 'connect', 'index.html')), 'text/html');
     if (u.pathname === '/home') return send(200, fs.readFileSync(path.join(__dirname, '..', 'index.html')), 'text/html'); // goibx.com root page
     const rel = u.pathname.replace(/^\/civic\//, '/');
     const f = path.join(__dirname, 'web', rel === '/' ? 'index.html' : rel);

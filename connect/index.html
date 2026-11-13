@@ -358,7 +358,34 @@ details.cm summary { cursor: pointer; font: 500 11.5px var(--f-mono); letter-spa
 .ti:hover { color: var(--marker); }
 .ti b { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--marker); margin-right: 8px; }
 .ledger.live .gauge { margin-top: 0; }
-@media (prefers-reduced-motion: reduce) { .tick { overflow-x: auto; } .tick-track { animation: none; } }</style>
+@media (prefers-reduced-motion: reduce) { .tick { overflow-x: auto; } .tick-track { animation: none; } }
+/* ---------- Panel slides: board data / engine ticker / civic search ---------- */
+.slides { display: grid; }
+/* Fade out the current page, then fade the next one in (no sliding, no overlap). */
+.slides > .slide { grid-area: 1 / 1; min-width: 0; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s linear .35s; }
+.slides > .slide.is-on { opacity: 1; visibility: visible; transition: opacity .4s ease .35s; }
+.slide-ctl { display: flex; align-items: center; gap: 8px; padding: 10px 0 2px; }
+.slide-ctl .dots { display: flex; gap: 6px; flex: 1; }
+.slide-ctl .dot { width: 26px; height: 6px; padding: 0; border: 0; border-radius: 3px; background: var(--line); cursor: pointer; position: relative; }
+.slide-ctl .dot::after { content: ""; position: absolute; inset: -10px -2px; }
+.slide-ctl .dot[aria-current="true"] { background: var(--sea); }
+.slide-ctl .pp { font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+.slide-ctl .dot:focus-visible, .slide-ctl .pp:focus-visible, .cv a:focus-visible, .cs input:focus-visible, .cs select:focus-visible, .cs button:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
+.cv .ci { padding: 9px 0; border-bottom: 1px dashed var(--line); }
+.cv .ci:last-of-type { border-bottom: 0; }
+.cv .ci a.hl { font: 600 15px/1.3 var(--f-body); color: var(--ink); text-decoration: none; display: block; }
+.cv .ci a.hl:hover { color: var(--marker); }
+.cv .ci .m { font: 11px var(--f-mono); color: var(--ink-2); margin-top: 2px; }
+.cv .ci a.o { font-size: 12px; color: var(--sea); }
+.cv .cnote { font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+.cs form { display: flex; flex-direction: column; gap: 8px; }
+.cs input[type=text], .cs select { width: 100%; padding: 10px 12px; font: inherit; font-size: 15px; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
+.cs .row { display: flex; gap: 8px; }
+.cs .row select { flex: 1 1 0; min-width: 0; }
+.cs button.go { padding: 10px 16px; font: 600 15px var(--f-body); background: var(--marker); color: var(--marker-ink); border: 0; border-radius: 4px; cursor: pointer; }
+.cs .types { font-size: 13px; color: var(--ink-2); display: flex; gap: 14px; flex-wrap: wrap; }
+.cs .hint { font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .slides > .slide, .slides > .slide.is-on { transition: none; } }</style>
 </head>
 <body>
 
@@ -411,9 +438,27 @@ details.cm summary { cursor: pointer; font: 500 11.5px var(--f-mono); letter-spa
       <aside class="ledger live" aria-label="Today on the Inner Banks">
         <div class="ledger-head"><span>Today on the Inner Banks</span> <span id="ledgerDate">Today</span></div>
         <div class="ledger-body">
-          <div class="lrow"><span class="lab">Latest on the board</span><div class="tick" id="tick"><div class="tick-track" id="tickTrack"></div></div></div>
-          <div class="lrow"><span class="lab">Weather &middot; Edenton</span><div class="val wrap" id="wxVal">Loading the forecast...</div></div>
-          <div class="lrow"><span class="lab">Announcements</span><div class="val" id="noteVal">No announcements right now.</div></div>
+          <div class="slides" id="slides">
+            <div class="slide is-on" data-slide="today" aria-label="Today">
+              <div class="lrow"><span class="lab">Latest on the board</span><div class="tick" id="tick"><div class="tick-track" id="tickTrack"></div></div></div>
+              <div class="lrow"><span class="lab">Weather &middot; Edenton</span><div class="val wrap" id="wxVal">Loading the forecast...</div></div>
+              <div class="lrow"><span class="lab">Announcements</span><div class="val" id="noteVal">No announcements right now.</div></div>
+            </div>
+            <div class="slide cv" data-slide="civic" aria-label="Civic ticker">
+              <div class="lrow"><span class="lab">Civic ticker &middot; Inner Banks</span><div id="cvList"></div></div>
+            </div>
+            <div class="slide cs" data-slide="search" aria-label="Civic search">
+              <div class="lrow"><span class="lab">Check a local claim</span>
+                <form id="csForm" role="search" aria-label="Civic search">
+                  <input type="text" name="q" placeholder="Ask about a local claim or issue" aria-label="Search" maxlength="300" required>
+                  <div class="row"><select name="r" aria-label="Region"><option value="inner-banks">Inner Banks</option><option value="hampton-roads">Hampton Roads</option><option value="greenville">Greenville</option></select><button class="go" type="submit">Search</button></div>
+                  <div class="types"><label><input type="radio" name="type" value="claim" checked> Check a claim</label><label><input type="radio" name="type" value="spend"> Look up spending</label></div>
+                </form>
+                <p class="hint">Answers are automated and show their sources.</p>
+              </div>
+            </div>
+          </div>
+          <div class="slide-ctl"><div class="dots" id="slideDots" role="group" aria-label="Panel pages"></div><button class="pp" id="slidePP" type="button" aria-pressed="false">Pause</button></div>
           <div class="gauge" aria-hidden="true">
             <svg viewBox="0 0 400 54" preserveAspectRatio="none">
               <path d="M0 26c25-14 50-14 75 0s50 14 75 0 50-14 75 0 50 14 75 0 50-14 75 0 50 14 75 0 50-14 75 0 50 14 75 0V54H0z" fill="var(--sea)" opacity=".28"/>
@@ -948,6 +993,69 @@ const firebaseConfig = {
     if (bs) bs.value = boardQuery;
     current = 'all'; renderTabs(); render();
   })();
+</script>
+<script>
+/* Today panel carousel + engine output. Self-contained; leaves the board/weather script above untouched. */
+(function () {
+  'use strict';
+  var SITE = 'https://goibx.com';   // serves /civic/ pages (search results, region pages)
+  var API = 'https://goibx.com';    // /api/** -> civicApi (CORS enabled)
+  var panel = document.querySelector('.ledger.live'), slidesEl = document.getElementById('slides');
+  if (!panel || !slidesEl) return;
+  var all = [].slice.call(slidesEl.querySelectorAll('.slide'));
+  var ready = { today: true, civic: false, search: true };
+  var cur = 0, timer = null, paused = false, hold = false, INTERVAL = 9000;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var dots = document.getElementById('slideDots'), pp = document.getElementById('slidePP');
+  function el(t, p, txt) { var n = document.createElement(t); Object.keys(p || {}).forEach(function (k) { n.setAttribute(k, p[k]); }); if (txt) n.textContent = txt; return n; }
+  function safe(u) { return /^https?:\/\//.test(u) ? u : '#'; }
+  function active() { return all.filter(function (sl) { return ready[sl.getAttribute('data-slide')]; }); }
+  function paint() {
+    var act = active(); if (cur >= act.length) cur = 0;
+    all.forEach(function (sl) { var on = sl === act[cur]; sl.classList.toggle('is-on', on); if (on) sl.removeAttribute('inert'); else sl.setAttribute('inert', ''); sl.setAttribute('aria-hidden', on ? 'false' : 'true'); });
+    dots.textContent = '';
+    act.forEach(function (sl, i) {
+      var b = el('button', { class: 'dot', type: 'button', 'aria-label': 'Show ' + sl.getAttribute('aria-label') });
+      if (i === cur) b.setAttribute('aria-current', 'true');
+      b.addEventListener('click', function () { cur = i; paint(); restart(); });
+      dots.appendChild(b);
+    });
+  }
+  function next() { cur = (cur + 1) % active().length; paint(); }
+  function stop() { clearInterval(timer); timer = null; }
+  function restart() { stop(); if (!paused && !hold && !reduce && active().length > 1) timer = setInterval(next, INTERVAL); }
+  pp.addEventListener('click', function () { paused = !paused; pp.textContent = paused ? 'Play' : 'Pause'; pp.setAttribute('aria-pressed', String(paused)); restart(); });
+  panel.addEventListener('mouseenter', function () { hold = true; restart(); });
+  panel.addEventListener('mouseleave', function () { hold = false; restart(); });
+  panel.addEventListener('focusin', function () { hold = true; restart(); });
+  panel.addEventListener('focusout', function (e) { if (!panel.contains(e.relatedTarget)) { hold = false; restart(); } });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); else restart(); });
+  if (reduce) { paused = true; pp.textContent = 'Play'; pp.setAttribute('aria-pressed', 'true'); }
+
+  // Search form (opens the full results page)
+  document.getElementById('csForm').addEventListener('submit', function (e) {
+    e.preventDefault(); var f = e.target, q = f.q.value.trim(); if (!q) return;
+    location.href = SITE + '/civic/results.html?r=' + encodeURIComponent(f.r.value) + '&type=' + encodeURIComponent(f.type.value) + '&q=' + encodeURIComponent(q);
+  });
+
+  // Engine output: the daily ticker. The slide only joins the rotation once it has items.
+  fetch(API + '/api/ticker?region=inner-banks').then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (d) {
+    var items = (d.items || []).slice(0, 2); if (!items.length) return;
+    var list = document.getElementById('cvList'); list.textContent = '';
+    items.forEach(function (it) {
+      var row = el('div', { class: 'ci' });
+      row.appendChild(el('a', { class: 'hl', href: SITE + '/civic/' + it.askHref, title: 'Ask about this' }, it.headline));
+      row.appendChild(el('div', { class: 'm' }, it.publisher + (it.why ? ' · ' + it.why : '')));
+      row.appendChild(el('a', { class: 'o', href: safe(it.url), rel: 'noopener', target: '_blank' }, 'Read the original ↗'));
+      list.appendChild(row);
+    });
+    list.appendChild(el('p', { class: 'cnote' }, 'Automated: read from public sources daily and summarized by software. '));
+    list.lastChild.appendChild(el('a', { class: 'o', href: SITE + '/civic/region.html?r=inner-banks' }, 'See all'));
+    ready.civic = true; paint(); restart();
+  }).catch(function () { /* ticker unavailable: slide stays out of the rotation */ });
+
+  paint(); restart();
+})();
 </script>
 </body>
 </html>
