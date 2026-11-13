@@ -28,6 +28,7 @@ Background: goibx.com is Firebase Hosting (project `thruket-site1`) serving the 
 10. **Verify live.**
     - https://goibx.com/civic/ loads (search page).
     - https://goibx.com/api/regions returns JSON listing inner-banks, hampton-roads, greenville.
+    - `https://goibx.com/ads.txt` still returns `google.com, pub-2072457581448001, DIRECT, f08c47fec0942fa0` (it must survive every deploy), and no ad code was added to the board or the panel
     - On https://goibx.com the panel shows the search box on top. The ticker will be EMPTY for now (no feeds wired yet): that is expected, and the panel must still look normal (no dots, no error text).
     - Search "Edenton bridge repair": expect "We have no sourced reporting on this yet."
     - Search "Did John Smith steal money": expect "We're looking into this."
