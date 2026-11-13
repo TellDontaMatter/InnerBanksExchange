@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inner Banks Exchange</title>
+  <style>
+    :root { --bg:#0b0b0f; --card:#14141c; --accent:#00ffcc; --text:#f0f0f5; --muted:#8a8a9e; --border:#262636; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.5; padding:20px; }
+    main { max-width:1000px; margin:0 auto; }
+    header { padding:48px 0 32px; }
+    .eyebrow { color:var(--accent); font:600 0.8rem monospace; letter-spacing:0.12em; text-transform:uppercase; }
+    h1 { font-size:clamp(2rem, 7vw, 3.25rem); line-height:1.1; margin:8px 0 12px; letter-spacing:-0.02em; text-wrap:balance; }
+    header p { color:var(--muted); max-width:46ch; margin:0; font-size:1.1rem; }
+    .cards { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; padding-bottom:48px; }
+    @media (max-width: 760px) { .cards { grid-template-columns:1fr; } }
+    .card { display:flex; flex-direction:column; justify-content:space-between; gap:24px; min-height:240px; padding:24px; background:var(--card); border:1px solid var(--border); border-radius:14px; color:inherit; text-decoration:none; transition:border-color .2s, transform .2s; }
+    .card:hover, .card:focus-visible { border-color:var(--accent); transform:translateY(-2px); outline:none; }
+    .card h2 { margin:0 0 8px; font-size:1.5rem; }
+    .card p { margin:0; color:var(--muted); }
+    .go { color:var(--accent); font-weight:600; }
+    #how h2 { margin:0 0 12px; }
+    #how ol { color:var(--muted); padding-left:1.2em; margin:0; display:grid; gap:8px; max-width:56ch; }
+    @media (prefers-reduced-motion: reduce) { .card { transition:none; } .card:hover { transform:none; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="eyebrow">Inner Banks Exchange</div>
+      <h1>Buy, sell, and trade with people nearby.</h1>
+      <p>Join the community, list your own items, or see how the exchange works.</p>
+    </header>
+
+    <section class="cards" aria-label="Get started">
+      <a class="card" id="card-community" href="https://ibxchange.web.app">
+        <div><h2>Community</h2><p>Meet the exchange and see what's available right now.</p></div>
+        <span class="go">Visit the community →</span>
+      </a>
+      <a class="card" id="card-sell" href="/intake/">
+        <div><h2>List an item</h2><p>Add something to the exchange in under a minute, photo included.</p></div>
+        <span class="go">Start listing →</span>
+      </a>
+      <a class="card" id="card-about" href="#how">
+        <div><h2>How it works</h2><p>Items you list reach the shop as soon as you submit them.</p></div>
+        <span class="go">Learn more →</span>
+      </a>
+    </section>
+
+    <section id="how" style="padding-bottom:64px">
+      <h2>How it works</h2>
+      <ol>
+        <li>Fill in the listing form with the item's name, price, category and a photo.</li>
+        <li>Tap submit. The item is saved right away.</li>
+        <li>It appears in the shop, ready to be seen.</li>
+      </ol>
+    </section>
+  </main>
+</body>
+</html>

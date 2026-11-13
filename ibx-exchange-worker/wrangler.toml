@@ -1,0 +1,18 @@
+name = "ibx-exchange"
+main = "worker/index.js"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*", "/item/*"]
+
+# 1. npx wrangler d1 create ibx-exchange-db      -> paste the printed database_id below
+# 2. npx wrangler d1 migrations apply ibx-exchange-db --remote
+# 3. npx wrangler secret put ADMIN_TOKEN          -> the password for the shop back end
+# 4. npx wrangler deploy
+[[d1_databases]]
+binding = "DB"
+database_name = "ibx-exchange-db"
+database_id = "40824b93-a005-47cf-8fbe-9e58fa190e41"
+migrations_dir = "migrations"
