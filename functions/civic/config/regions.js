@@ -15,6 +15,11 @@ module.exports = {
   },
   recordsKitUrl: 'https://dontamatterz.gumroad.com/l/crmbkw',
   anchor: 'Chowan County', // every ticker item says why it matters here
+  // Reader groups the "why it matters" line may speak to, only when an item clearly bears on them.
+  audiences: [
+    'Newport News Shipbuilding workers and retirees who live in the Inner Banks',
+    'owner-operator truck drivers who haul containers from the Hampton Roads port terminals',
+  ],
   ticker: { itemsPerSource: 4, maxItemsPerRegion: 40 },
   model: { id: 'claude-haiku-5-5', maxTokens: 1500 },
   regions: {
@@ -30,11 +35,12 @@ module.exports = {
         { id: 'albemarle-observer', name: 'Albemarle Observer', site: null, feedUrl: null },
         { id: 'town-edenton', name: 'Town of Edenton', site: 'https://www.townofedentonnc.gov', feedUrl: null },
         { id: 'chowan-county', name: 'Chowan County', site: 'https://www.chowancounty-nc.gov', feedUrl: null },
+        { id: 'city-elizabeth-city', name: 'City of Elizabeth City', site: 'https://www.cityofec.com', feedUrl: null },
       ],
     },
     'hampton-roads': {
       name: 'Hampton Roads',
-      places: ['Norfolk', 'Virginia Beach', 'Chesapeake', 'Portsmouth', 'Suffolk', 'Newport News', 'Hampton'],
+      places: ['Suffolk', 'Virginia Beach', 'Chesapeake', 'Norfolk', 'Portsmouth', 'Newport News', 'Hampton'],
       colours: { ink: '#0e2233', accent: '#1f5f8b', marker: '#d8461a', paper: '#e9eef2' },
       free: { spend: { recordCount: true, latestDate: true, lineDetail: false } },
       sources: [
@@ -42,9 +48,14 @@ module.exports = {
         { id: 'wavy', name: 'WAVY', site: 'https://www.wavy.com', feedUrl: null },
         { id: 'wtkr', name: 'WTKR', site: 'https://www.wtkr.com', feedUrl: null },
         { id: '13newsnow', name: '13News Now', site: 'https://www.13newsnow.com', feedUrl: null },
-        { id: 'port-of-virginia', name: 'Port of Virginia', site: 'https://www.portofvirginia.com', feedUrl: null },
+        // alsoIn: these also feed the Inner Banks ticker and search (they affect the Inner Banks most).
+        { id: 'port-of-virginia', name: 'Port of Virginia', site: 'https://www.portofvirginia.com', feedUrl: null, alsoIn: ['inner-banks'] },
+        { id: 'city-suffolk', name: 'City of Suffolk', site: 'https://www.suffolkva.us', feedUrl: null, alsoIn: ['inner-banks'] },
+        { id: 'city-virginia-beach', name: 'City of Virginia Beach', site: 'https://www.vbgov.com', feedUrl: null, alsoIn: ['inner-banks'] },
+        { id: 'city-chesapeake', name: 'City of Chesapeake', site: 'https://www.cityofchesapeake.net', feedUrl: null, alsoIn: ['inner-banks'], note: 'Check the domain; may be chesapeakeva.gov.' },
+        { id: 'city-newport-news', name: 'City of Newport News', site: 'https://www.nnva.gov', feedUrl: null, alsoIn: ['inner-banks'] },
+        { id: 'hii-nns', name: 'HII Newport News Shipbuilding', site: 'https://hii.com', feedUrl: null, alsoIn: ['inner-banks'], note: 'Shipyard workers and retirees live in the Inner Banks.' },
         { id: 'hrpdc', name: 'Hampton Roads Planning District Commission', site: 'https://www.hrpdcva.gov', feedUrl: null },
-        { id: 'hr-city-governments', name: 'Hampton Roads city governments', site: null, feedUrl: null, note: 'Needs a list of which cities.' },
       ],
     },
     greenville: {

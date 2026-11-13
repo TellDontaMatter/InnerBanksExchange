@@ -21,17 +21,25 @@ async function fetchWithTimeout(fetchImpl, url, ms = 15000) {
  */
 async function runTicker({ config, store, summarizer, fetchImpl = fetch, now = () => new Date() }) {
   const report = { regions: {}, skippedSources: [], errors: [] };
+  // Pass 1: read every source once; an item lands in its own region and in any region named in `alsoIn`.
+  const byRegion = Object.fromEntries(Object.keys(config.regions).map((r) => [r, []]));
   for (const [rid, region] of Object.entries(config.regions)) {
-    const items = [];
     for (const src of region.sources) {
       if (!src.feedUrl) { report.skippedSources.push(`${rid}/${src.id}: no verified feed`); continue; }
       try {
         const res = await fetchWithTimeout(fetchImpl, src.feedUrl);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const parsed = parseFeed(await res.text()).slice(0, config.ticker.itemsPerSource);
-        for (const p of parsed) items.push({ regionId: rid, sourceId: src.id, group: src.group, publisher: src.name, headline: p.headline, url: p.link, date: p.date, snippet: p.snippet });
+        for (const target of [rid, ...(src.alsoIn || [])]) {
+          if (!byRegion[target]) continue;
+          for (const p of parsed) byRegion[target].push({ sourceId: src.id, group: src.group, publisher: src.name, headline: p.headline, url: p.link, date: p.date, snippet: p.snippet });
+        }
       } catch (e) { report.errors.push(`${rid}/${src.id}: ${e.message}`); }
     }
+  }
+  // Pass 2: per region, dedupe, summarize in one batched call, store.
+  for (const rid of Object.keys(config.regions)) {
+    const items = byRegion[rid];
     const seen = new Set();
     const uniq = items.filter((i) => (seen.has(i.url) ? false : seen.add(i.url)))
       .sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, config.ticker.maxItemsPerRegion);
@@ -39,7 +47,7 @@ async function runTicker({ config, store, summarizer, fetchImpl = fetch, now = (
     let ai = uniq.map(() => null);
     if (uniq.length && summarizer.available) {
       const q = await reserve(store, { visitorId: null, limits: config.limits, now: now() });
-      if (q.ok) { try { ai = await summarizer.summarizeItems({ items: uniq, anchor: config.anchor }); } catch (e) { report.errors.push(`${rid}: summarize ${e.message}`); } }
+      if (q.ok) { try { ai = await summarizer.summarizeItems({ items: uniq, anchor: config.anchor, audiences: config.audiences }); } catch (e) { report.errors.push(`${rid}: summarize ${e.message}`); } }
       else report.errors.push(`${rid}: daily cap reached, headlines only`);
     }
     const out = uniq.map((it, i) => ({

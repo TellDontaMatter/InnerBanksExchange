@@ -24,7 +24,7 @@ Until step 1 and 3 are done the new bits stay dormant: the ticker request 404s, 
 
 ## Blocking / needs you
 1. **Model API key: deferred by choice.** Launching without it. Search lists matching sources (with confidence) and no written summary; the ticker shows headlines and links only. To switch summaries on later: `firebase functions:secrets:set ANTHROPIC_API_KEY`, then redeploy. No code change.
-2. **Verify the ticker sources.** The build sandbox could not reach the publishers, so no feed is wired. From a normal machine run `node functions/civic/scripts/check-sources.js`, then paste each `feedUrl` into `functions/civic/config/regions.js`. Still need a URL for: Chowan Herald, Albemarle Observer, and which Hampton Roads city governments. The ticker is empty until feeds are set.
+2. **Verify the ticker sources.** The build sandbox could not reach the publishers, so no feed is wired. From a normal machine run `node functions/civic/scripts/check-sources.js`, then paste each `feedUrl` into `functions/civic/config/regions.js`. Still need a URL for: Chowan Herald and Albemarle Observer. City sites were added from best-known domains (Suffolk, Virginia Beach, Chesapeake, Newport News, HII, Elizabeth City); the checker will say which are wrong (Chesapeake's domain especially). The ticker is empty until feeds are set.
 3. **Billing:** Blaze is on; set a budget alert before enabling the schedule.
 
 ## Should do before launch
@@ -38,5 +38,5 @@ Until step 1 and 3 are done the new bits stay dormant: the ticker request 404s, 
 - Spend data: plug an adapter into `functions/civic/engine/spend.js`. Paid line-level detail needs an entitlement check (Stripe, later).
 
 ## Run it
-- Tests: `cd functions && npm test` (15 tests)
+- Tests: `cd functions && npm test` (18 tests)
 - Local preview with sample data: `node civic/dev-server.js` -> http://localhost:5055 (admin: `/admin.html?dev=1`)

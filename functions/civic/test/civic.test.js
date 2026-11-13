@@ -152,3 +152,35 @@ test('rss parser reads RSS and Atom, drops items without http links', () => {
   assert.equal(parseFeed(RSS(1)).length, 2);
   assert.equal(parseFeed('<feed><entry><title>T</title><link href="https://a.example/x"/><updated>2026-11-01T00:00:00Z</updated></entry><entry><title>no link</title></entry></feed>').length, 1);
 });
+
+test('cross-listing: Hampton Roads city/port sources also appear in the Inner Banks ticker and search; local-only ones do not', async () => {
+  const cfg = JSON.parse(JSON.stringify(baseConfig));
+  const hr = cfg.regions['hampton-roads'].sources;
+  hr.find((s) => s.id === 'city-suffolk').feedUrl = 'https://feed1.example/rss';   // alsoIn inner-banks
+  hr.find((s) => s.id === 'wavy').feedUrl = 'https://feed2.example/rss';            // Hampton Roads only
+  const store = new MemoryStore(); const model = fakeModel();
+  await runTicker({ config: cfg, store, summarizer: model, fetchImpl: fakeFetch });
+  const ib = await store.listTicker('inner-banks'); const hrItems = await store.listTicker('hampton-roads');
+  assert.ok(ib.some((i) => i.sourceId === 'city-suffolk')); assert.ok(!ib.some((i) => i.sourceId === 'wavy'));
+  assert.equal(hrItems.length, 4);
+  assert.ok(ib.every((i) => i.askHref.startsWith('results.html?r=inner-banks')));
+  const h = makeHandlers({ config: cfg, store, summarizer: model });
+  const r = await h.query({ region: 'inner-banks', type: 'claim', query: 'Headline 1-1', visitorId: 'z' });
+  assert.equal(r.sources.length, 1); assert.equal(r.sources[0].publisher, 'City of Suffolk');
+});
+
+test('the 4 impact cities are configured: Suffolk, Virginia Beach, Chesapeake in Hampton Roads (cross-listed), Elizabeth City in Inner Banks', () => {
+  const ids = (r) => baseConfig.regions[r].sources.map((s) => s.id);
+  for (const id of ['city-suffolk', 'city-virginia-beach', 'city-chesapeake', 'hii-nns', 'port-of-virginia']) {
+    assert.ok(ids('hampton-roads').includes(id), id);
+    assert.deepEqual(baseConfig.regions['hampton-roads'].sources.find((s) => s.id === id).alsoIn, ['inner-banks']);
+  }
+  assert.ok(ids('inner-banks').includes('city-elizabeth-city'));
+});
+
+test('audiences reach the ticker model prompt, with a "only when it clearly bears on them" guard', async () => {
+  const { anthropicSummarizer } = require('../engine/summarizer');
+  let body; const m = anthropicSummarizer({ apiKey: 'k', model: 'm', fetchImpl: async (u, o) => { body = JSON.parse(o.body); return { ok: true, json: async () => ({ content: [{ type: 'text', text: '[{"i":0,"summary":"s","why":"w"}]' }] }) }; } });
+  await m.summarizeItems({ items: [{ publisher: 'P', headline: 'H' }], anchor: 'Chowan County', audiences: baseConfig.audiences });
+  assert.match(body.system, /Newport News Shipbuilding workers and retirees/); assert.match(body.system, /truck drivers/); assert.match(body.system, /only when the item clearly bears on it/);
+});
