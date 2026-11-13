@@ -226,3 +226,12 @@ test('local observations never bypass the review hold', async () => {
   const r = await ask(h, 'did the Tractor Supply owner in Edenton commit fraud');
   assert.equal(r.held, true); assert.equal(r.observations, undefined);
 });
+
+test('field observations (farming, Bojangles/US 17) are logged as unconfirmed and found by their own words', async () => {
+  const { h } = await setup({ evidence: [] });
+  for (const [q, re] of [['melon stands this year', /melon/], ['less cotton and tobacco', /cotton/], ['combines on the road', /[Cc]ombines/], ['new Bojangles on US 17', /Bojangles/]]) {
+    const r = await ask(h, q);
+    assert.ok(r.observations.some((o) => re.test(o.text)), q);
+    assert.ok(r.observations.every((o) => o.status === 'Hypothesis' && o.confirmWith.length));
+  }
+});
