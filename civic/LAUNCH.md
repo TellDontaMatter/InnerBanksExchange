@@ -2,6 +2,9 @@
 
 Status: built and tested locally on branch `claude/confident-johnson-0gof95`. Nothing deployed.
 
+## Decided (Nov 13): engine = Firebase function; site = Firebase Hosting site `ibxconnect` in `thruket-site1`. Cloudflare is DNS only; no Workers/D1 for this.
+Deploy only from a staging copy mirrored from live, and keep `ads.txt` live at goibx.com/ads.txt (`google.com, pub-2072457581448001, DIRECT, f08c47fec0942fa0`). No ad code on the board. See `civic/MUSE-INSTRUCTIONS.md`.
+
 ## READ FIRST: the repo's `connect/` folder is stale. Do not deploy it.
 goibx.com is **Firebase Hosting** serving the IBX Connect page. The live page (checked Nov 13) is a newer, larger
 codebase than `connect/` in this repo: it has `ibx.css`, `connect-theme.css`, `wire/`, `fonts/`, `img/`, extra
