@@ -241,6 +241,31 @@ footer { border-top: 1.5px solid var(--ink); background: var(--paper); }
   .tag, .tag-img img, .btn { transition: none; }
 }
 </style>
+<style>
+/* Civic search + ticker (self-contained; uses this page's tokens) */
+.civic { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 56px 0; }
+.civic .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+.civic h2 { font-family: var(--f-display); font-size: 36px; text-transform: uppercase; letter-spacing: .02em; line-height: 1; }
+.civic .c-sub { color: var(--ink-2); margin: 10px 0 18px; max-width: 46ch; }
+.civic form { display: flex; gap: 8px; flex-wrap: wrap; }
+.civic input[type=text], .civic select { padding: 12px 14px; font: inherit; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
+.civic input[type=text] { flex: 1 1 220px; min-width: 0; }
+.civic fieldset { border: 0; flex-basis: 100%; font-size: 14px; color: var(--ink-2); }
+.civic fieldset label { margin-right: 14px; }
+.civic .c-go { padding: 12px 18px; font: 600 16px var(--f-body); background: var(--marker); color: var(--marker-ink); border: 0; border-radius: 6px; cursor: pointer; }
+.civic .c-tabs { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 8px; }
+.civic .c-tabs a { font: 500 12px var(--f-mono); text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--line); }
+.civic .c-tabs a[aria-current] { color: var(--sea); border-color: var(--sea); }
+.civic .c-item { padding: 10px 0; border-top: 1px solid var(--line); }
+.civic .c-item:first-child { border-top: 0; }
+.civic .c-item a.hl { color: var(--ink); font-weight: 600; text-decoration: none; }
+.civic .c-item a.hl:hover { text-decoration: underline; }
+.civic .c-item .m { font: 12px var(--f-mono); color: var(--ink-2); }
+.civic .c-item .o { font-size: 13px; color: var(--sea); }
+.civic .c-note { font-size: 13px; color: var(--ink-2); margin-top: 10px; }
+.civic input:focus-visible, .civic select:focus-visible, .civic button:focus-visible, .civic a:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
+@media (max-width: 860px) { .civic .wrap { grid-template-columns: minmax(0, 1fr); gap: 32px; } .civic { padding: 40px 0; } }
+</style>
 </head>
 <body>
 
@@ -272,6 +297,7 @@ footer { border-top: 1.5px solid var(--ink); background: var(--paper); }
     </a>
     <nav class="nav" aria-label="Primary">
       <a href="#lots">Lots</a>
+      <a href="#civic">Civic search</a>
       <a href="#standard">The tag standard</a>
       <a href="#network">Network</a>
     </nav>
@@ -308,6 +334,25 @@ footer { border-top: 1.5px solid var(--ink); background: var(--paper); }
       </aside>
     </div>
     <svg class="tideline" viewBox="0 0 1200 38" preserveAspectRatio="none" aria-hidden="true"><path d="M0 38V20c100-24 200-24 300 0s200 24 300 0 200-24 300 0 200 24 300 0v18z" fill="currentColor"/></svg>
+  </section>
+
+  <section class="civic" id="civic" aria-labelledby="civicHeading">
+    <div class="wrap">
+      <div>
+        <h2 id="civicHeading">Check a local claim</h2>
+        <p class="c-sub">Search what's being said about the Inner Banks and see the sources behind it. Summaries are automated.</p>
+        <form id="civicForm" role="search" aria-label="Civic search">
+          <input type="text" name="q" placeholder="Ask about a local claim or issue" aria-label="Search" maxlength="300" required>
+          <select name="r" aria-label="Region"><option value="inner-banks">Inner Banks</option><option value="hampton-roads">Hampton Roads</option><option value="greenville">Greenville</option></select>
+          <button class="c-go" type="submit">Search</button>
+          <fieldset><label><input type="radio" name="type" value="claim" checked> Check a claim</label><label><input type="radio" name="type" value="spend"> Look up spending</label></fieldset>
+        </form>
+      </div>
+      <div>
+        <div class="c-tabs" id="civicTabs" aria-label="Ticker regions"></div>
+        <div id="civicTicker" aria-live="polite"><p class="c-note">Loading the ticker&hellip;</p></div>
+      </div>
+    </div>
   </section>
 
   <section class="shop" id="lots" aria-labelledby="lotsHeading">
@@ -550,6 +595,50 @@ function startLive() {
   }
 }
 startLive();
+</script>
+<script>
+(function () {
+  'use strict';
+  var BASE = '/civic/';          // where civic/web is served
+  var API = '';                   // '' = same origin (/api/... -> civicApi)
+  var REGIONS = [['inner-banks', 'Inner Banks'], ['hampton-roads', 'Hampton Roads'], ['greenville', 'Greenville']];
+  var form = document.getElementById('civicForm'), tabs = document.getElementById('civicTabs'), box = document.getElementById('civicTicker');
+  if (!form) return;
+  function el(t, p, txt) { var n = document.createElement(t); Object.keys(p || {}).forEach(function (k) { n.setAttribute(k, p[k]); }); if (txt) n.textContent = txt; return n; }
+  function safe(u) { return /^https?:\/\//.test(u) ? u : '#'; }
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var q = form.q.value.trim(); if (!q) return;
+    location.href = BASE + 'results.html?r=' + encodeURIComponent(form.r.value) + '&type=' + encodeURIComponent(form.type.value) + '&q=' + encodeURIComponent(q);
+  });
+  function show(id) {
+    tabs.textContent = '';
+    REGIONS.forEach(function (r, i) {
+      var a = el('a', { href: i === 0 ? '#civic' : BASE + 'region.html?r=' + r[0] }, r[1]);
+      if (r[0] === id) a.setAttribute('aria-current', 'page');
+      if (i === 0) a.addEventListener('click', function (ev) { ev.preventDefault(); load(r[0]); });
+      tabs.appendChild(a);
+    });
+  }
+  function load(id) {
+    show(id);
+    fetch(API + '/api/ticker?region=' + encodeURIComponent(id)).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (d) {
+      box.textContent = '';
+      var items = d.items.slice(0, 5);
+      if (!items.length) box.appendChild(el('p', { class: 'c-note' }, 'No items yet. The ticker updates once a day.'));
+      items.forEach(function (it) {
+        var row = el('div', { class: 'c-item' });
+        row.appendChild(el('a', { class: 'hl', href: BASE + it.askHref, title: 'Ask about this' }, it.headline));
+        row.appendChild(el('div', { class: 'm' }, it.publisher + (it.date ? ' · ' + it.date.slice(0, 10) : '')));
+        if (it.why) row.appendChild(el('div', { class: 'm' }, 'Why it matters: ' + it.why));
+        row.appendChild(el('a', { class: 'o', href: safe(it.url), rel: 'noopener', target: '_blank' }, 'Read the original ↗'));
+        box.appendChild(row);
+      });
+      box.appendChild(el('p', { class: 'c-note' }, 'Automated: read from public sources once a day and summarized by software. Check the original.'));
+    }).catch(function () { box.textContent = ''; box.appendChild(el('p', { class: 'c-note' }, 'Ticker unavailable right now.')); });
+  }
+  load('inner-banks');
+})();
 </script>
 </body>
 </html>
