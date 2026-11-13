@@ -1,0 +1,37 @@
+/* Matches the IBX "dock ledger" look in shop/index.html. Region colours override --sea/--ink via civic.js. */
+:root{--paper:#ecefe9;--card:#f6f7f2;--ink:#10222a;--ink-2:#51656b;--line:#c3ccc4;--sea:#1d5c60;--marker:#d8461a;--marker-ink:#fff;--flaw-bg:#f3e3d9;--flaw-ink:#7a2e12;--ok:#2f7a4f;
+--f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;--f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--paper:#0b171b;--card:#12262d;--ink:#e7eee9;--ink-2:#93a8ac;--line:#213840;--sea:#5fb3b3;--marker:#ff6a3d;--marker-ink:#1a0a04;--flaw-bg:#2d1c15;--flaw-ink:#f2a98a;--ok:#6fcf97;color-scheme:dark}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);line-height:1.5;padding:0 16px 48px}
+.wrap{max-width:760px;margin:0 auto}
+header{padding:20px 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--f-display);font-size:2.2rem;letter-spacing:.02em;text-transform:uppercase}
+h2{font-family:var(--f-display);font-size:1.4rem;text-transform:uppercase;letter-spacing:.03em;margin:28px 0 10px}
+nav a{font-family:var(--f-mono);font-size:.8rem;color:var(--ink-2);margin-right:12px;text-decoration:none;border-bottom:1px solid var(--line)}
+nav a[aria-current]{color:var(--sea);border-color:var(--sea)}
+.lede{color:var(--ink-2);margin-bottom:14px}
+form.search{display:flex;gap:8px;flex-wrap:wrap}
+.search input[type=text]{flex:1 1 240px;min-width:0;padding:12px 14px;font:inherit;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px}
+.search select{padding:12px;font:inherit;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px}
+button,.btn{padding:12px 18px;font:600 1rem var(--f-body);background:var(--marker);color:var(--marker-ink);border:0;border-radius:6px;cursor:pointer;text-decoration:none;display:inline-block}
+button.quiet{background:transparent;color:var(--sea);border:1px solid var(--sea)}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--sea);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin:12px 0}
+.label{display:inline-block;font:500 .72rem var(--f-mono);text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:4px;background:var(--flaw-bg);color:var(--flaw-ink)}
+.conf{font:600 .78rem var(--f-mono);padding:3px 8px;border-radius:4px;border:1px solid var(--sea);color:var(--sea);margin-left:6px}
+.conf.Affirmed{background:var(--sea);color:var(--paper)}
+.sources{margin-top:12px;list-style:none}.sources li{padding:6px 0;border-top:1px solid var(--line);font-size:.92rem}
+.sources a,.item a.orig{color:var(--sea)}
+.item{padding:12px 0;border-top:1px solid var(--line)}.item:first-child{border-top:0}
+.item .hl{font-weight:600;color:var(--ink);text-decoration:none;display:block}
+.item .hl:hover{text-decoration:underline}
+.item .meta{font:.74rem var(--f-mono);color:var(--ink-2);margin-top:2px}
+.item .why{font-size:.88rem;color:var(--ink-2);margin-top:4px}
+.item .links{margin-top:4px;font-size:.82rem}
+.muted{color:var(--ink-2);font-size:.88rem}
+.warn{border-left:4px solid var(--marker)}
+.ticker-note{margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+th{font:500 .74rem var(--f-mono);text-transform:uppercase;color:var(--ink-2)}
+.pager{display:flex;gap:8px;margin-top:12px}

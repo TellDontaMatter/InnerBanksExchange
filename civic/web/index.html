@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IBX Civic Search</title>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="civic.css"></head>
+<body><div class="wrap">
+<header><h1 data-region-name>Inner Banks</h1><nav aria-label="Regions"></nav></header>
+<p class="lede">Search local claims with sources, and read today's regional ticker.</p>
+<form class="search" role="search" aria-label="Civic search">
+<input type="text" name="q" placeholder="Ask about a local claim or issue" aria-label="Search" maxlength="300" required>
+<select aria-label="Region"></select>
+<button type="submit">Search</button>
+<fieldset style="border:0;flex-basis:100%;font-size:.88rem;color:var(--ink-2)"><label><input type="radio" name="type" value="claim" checked> Check a claim</label> &nbsp; <label><input type="radio" name="type" value="spend"> Look up spending</label></fieldset></form>
+<h2>Today's ticker</h2><div id="ticker"><p class="muted">Loading…</p></div>
+</div>
+<script src="config.js"></script><script src="civic.js"></script>
+<script>
+CivicUI.api('/regions').then(function(rs){var id=(rs.filter(function(r){return r.home})[0]||rs[0]).id;CivicUI.applyRegion(rs,id);CivicUI.nav(rs,id);CivicUI.searchForm(id,rs);
+return CivicUI.api('/ticker?region='+id)}).then(function(d){CivicUI.renderTicker(document.getElementById('ticker'),d)}).catch(function(){document.getElementById('ticker').textContent='Ticker unavailable right now.'});</script></body></html>

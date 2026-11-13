@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex"><title>IBX Civic Admin</title>
+<link rel="stylesheet" href="civic.css"></head>
+<body><div class="wrap">
+<header><h1>Civic admin</h1></header>
+<form id="login" class="search"><input type="text" id="em" placeholder="Admin email" autocomplete="username"><input type="text" id="pw" placeholder="Password" autocomplete="current-password" style="-webkit-text-security:disc"><button type="submit">Sign in</button></form>
+<p id="msg" class="muted"></p><div id="out"></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){'use strict';
+var DEV=location.search.indexOf('dev=1')>-1&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+var msg=document.getElementById('msg'),out=document.getElementById('out');
+function el(t,x,k){var n=document.createElement(t);if(x)n.textContent=x;(k||[]).forEach(function(c){n.appendChild(c)});return n}
+function table(h,rows){var t=el('table'),r=el('tr');h.forEach(function(c){r.appendChild(el('th',c))});t.appendChild(r);rows.forEach(function(row){var tr=el('tr');row.forEach(function(c){tr.appendChild(el('td',String(c)))});t.appendChild(tr)});return t}
+function load(token){fetch((window.CIVIC.api||'')+'/api/admin',{headers:{authorization:'Bearer '+token}}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(a){
+ document.getElementById('login').style.display='none';msg.textContent=a.total+' queries logged.';out.textContent='';
+ out.appendChild(el('h2','Top queries'));out.appendChild(table(['Region','Query','Count'],a.top.map(function(t){return [t.region,t.text,t.n]})));
+ out.appendChild(el('h2','Misses (no sources / not covered)'));out.appendChild(table(['When','Region','Type','Query'],a.misses.map(function(m){return [m.ts.slice(0,16),m.region,m.type,m.text]})));
+ out.appendChild(el('h2','Review queue'));out.appendChild(table(['When','Region','Why held','Query'],a.reviewQueue.map(function(m){return [m.ts.slice(0,16),m.region,m.reason,m.text]})));
+ out.appendChild(el('h2','Place requests'));out.appendChild(table(['When','Region','Place','Email'],a.requests.map(function(m){return [m.ts.slice(0,16),m.region,m.place,m.email||'']})));
+}).catch(function(){msg.textContent='Not authorised.'})}
+if(DEV){load('dev');return}
+firebase.initializeApp({apiKey:'AIzaSyCoasi8-mc8yu3dfV6rwGY3W8uBKWhrGWY',projectId:'thruket-site1',authDomain:'thruket-site1.firebaseapp.com',appId:'1:672207336404:web:e7d4f0ec85db6850bb5c41'});
+firebase.auth().onAuthStateChanged(function(u){if(u)u.getIdToken().then(load)});
+document.getElementById('login').addEventListener('submit',function(e){e.preventDefault();firebase.auth().signInWithEmailAndPassword(document.getElementById('em').value,document.getElementById('pw').value).catch(function(){msg.textContent='Sign-in failed.'})});
+})();
+</script></body></html>

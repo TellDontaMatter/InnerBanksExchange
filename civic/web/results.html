@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IBX Civic Results</title>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="civic.css"></head>
+<body><div class="wrap">
+<header><h1 data-region-name>Inner Banks</h1><nav aria-label="Regions"></nav></header>
+<form class="search" role="search" aria-label="Civic search">
+<input type="text" name="q" placeholder="Ask about a local claim or issue" aria-label="Search" maxlength="300" required>
+<select aria-label="Region"></select>
+<button type="submit">Search</button>
+<fieldset style="border:0;flex-basis:100%;font-size:.88rem;color:var(--ink-2)"><label><input type="radio" name="type" value="claim" checked> Check a claim</label> &nbsp; <label><input type="radio" name="type" value="spend"> Look up spending</label></fieldset></form>
+<div id="out" aria-live="polite"><p class="muted">Searching…</p></div>
+</div>
+<script src="config.js"></script><script src="civic.js"></script>
+<script>
+var p=CivicUI.params(),id=p.get('r')||'',q=p.get('q')||'',type=p.get('type')==='spend'?'spend':'claim';
+CivicUI.api('/regions').then(function(rs){CivicUI.applyRegion(rs,id);CivicUI.nav(rs,id);CivicUI.searchForm(id,rs);
+document.querySelector('input[name=q]').value=q;document.querySelector('input[name=type][value='+type+']').checked=true;
+if(!q){document.getElementById('out').textContent='';return}
+return CivicUI.api('/query',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({region:id,query:q,type:type,visitorId:CivicUI.visitorId()})}).then(function(r){CivicUI.renderResult(document.getElementById('out'),r,{region:id})})}).catch(function(){document.getElementById('out').textContent='Something went wrong. Try again.'});</script></body></html>
