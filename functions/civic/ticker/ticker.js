@@ -47,7 +47,7 @@ async function runTicker({ config, store, summarizer, fetchImpl = fetch, now = (
     let ai = uniq.map(() => null);
     if (uniq.length && summarizer.available) {
       const q = await reserve(store, { visitorId: null, limits: config.limits, now: now() });
-      if (q.ok) { try { ai = await summarizer.summarizeItems({ items: uniq, anchor: config.anchor, audiences: config.audiences }); } catch (e) { report.errors.push(`${rid}: summarize ${e.message}`); } }
+      if (q.ok) { try { ai = await summarizer.summarizeItems({ items: uniq, anchor: config.anchor, audiences: config.audiences, corridor: config.corridor }); } catch (e) { report.errors.push(`${rid}: summarize ${e.message}`); } }
       else report.errors.push(`${rid}: daily cap reached, headlines only`);
     }
     const out = uniq.map((it, i) => ({

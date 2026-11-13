@@ -21,12 +21,12 @@ function anthropicSummarizer({ apiKey, model, fetchImpl = fetch, maxTokens = 400
       return (j.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
     },
     // Ticker: one call per region. Returns [{summary, why}] aligned to items.
-    async summarizeItems({ items, anchor, audiences = [] }) {
+    async summarizeItems({ items, anchor, audiences = [], corridor }) {
       const list = items.map((it, i) => `${i}. ${it.publisher}: ${it.headline}${it.snippet ? ' | ' + it.snippet : ''}`).join('\n');
       const res = await fetchImpl('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-        body: JSON.stringify({ model, max_tokens: 1500, system: `For each numbered news item write "summary" (1-2 sentences, your own words, no copied phrases) and "why" (one line on why it matters to ${anchor}). Use only what is given.${audiences.length ? ' Readers include: ' + audiences.join('; ') + '. Mention a group only when the item clearly bears on it; never guess.' : ''} Reply with a JSON array of {"i":number,"summary":string,"why":string} and nothing else.`, messages: [{ role: 'user', content: list }] }),
+        body: JSON.stringify({ model, max_tokens: 1500, system: `For each numbered news item write "summary" (1-2 sentences, your own words, no copied phrases) and "why" (one line on why it matters to ${anchor}). Use only what is given.${audiences.length ? ' Readers include: ' + audiences.join('; ') + '. Mention a group only when the item clearly bears on it; never guess.' : ''}${corridor ? ' Geography, north to south: ' + corridor.order.join(' > ') + '. ' + corridor.note : ''} Reply with a JSON array of {"i":number,"summary":string,"why":string} and nothing else.`, messages: [{ role: 'user', content: list }] }),
       });
       if (!res.ok) throw new Error(`model call failed: ${res.status}`);
       const j = await res.json();
