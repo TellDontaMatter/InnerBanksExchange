@@ -998,7 +998,7 @@ const firebaseConfig = {
 (function () {
   'use strict';
   var SITE = 'https://goibx.com';   // serves /civic/ pages (search results, region pages)
-  var API = 'https://goibx.com';    // /api/** -> civicApi (CORS enabled)
+  var API = '';                     // SET AFTER DEPLOY: the civicApi function URL (no trailing slash). '' = feature stays dormant.
   var panel = document.querySelector('.ledger.live'), slidesEl = document.getElementById('slides');
   if (!panel || !slidesEl) return;
   var all = [].slice.call(slidesEl.querySelectorAll('.slide'));

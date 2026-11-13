@@ -1,2 +1,2 @@
-// API base. Empty = same origin (/api/... rewritten to the civicApi function on deploy).
+// SET AFTER DEPLOY: the civicApi function URL, no trailing slash. Pages call <api>/api/query etc.
 window.CIVIC = { api: '' };

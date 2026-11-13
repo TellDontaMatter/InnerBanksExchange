@@ -600,7 +600,7 @@ startLive();
 (function () {
   'use strict';
   var BASE = '/civic/';          // where civic/web is served
-  var API = '';                   // '' = same origin (/api/... -> civicApi)
+  var API = '';                   // SET AFTER DEPLOY: the civicApi function URL (no trailing slash). '' = ticker stays off.
   var REGIONS = [['inner-banks', 'Inner Banks'], ['hampton-roads', 'Hampton Roads'], ['greenville', 'Greenville']];
   var form = document.getElementById('civicForm'), tabs = document.getElementById('civicTabs'), box = document.getElementById('civicTicker');
   if (!form) return;
