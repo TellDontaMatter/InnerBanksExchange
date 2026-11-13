@@ -15,6 +15,11 @@ module.exports = {
   },
   recordsKitUrl: 'https://dontamatterz.gumroad.com/l/crmbkw',
   anchor: 'Chowan County', // every ticker item says why it matters here
+  // Geography the model is told about, so "why it matters" is grounded. North to south; Chowan is the far end.
+  corridor: {
+    order: ['Virginia Beach / Chesapeake', 'Knotts Island (Currituck County)', 'Currituck', 'Camden', 'Pasquotank (Elizabeth City)', 'Perquimans', 'Chowan (Edenton)'],
+    note: 'Chowan County is the southern end of this corridor, just before the Chowan River bridge to Bertie County. Hampton Roads news reaches Chowan through the places in between.',
+  },
   // Reader groups the "why it matters" line may speak to, only when an item clearly bears on them.
   audiences: [
     'Newport News Shipbuilding workers and retirees who live in the Inner Banks',
@@ -26,7 +31,7 @@ module.exports = {
     'inner-banks': {
       name: 'Inner Banks',
       home: true,
-      places: ['Edenton', 'Chowan County', 'Hertford', 'Elizabeth City', 'Perquimans', 'Bertie', 'Gates', 'Washington County'],
+      places: ['Knotts Island', 'Currituck', 'Camden', 'Elizabeth City', 'Pasquotank', 'Perquimans', 'Edenton', 'Chowan County', 'Hertford', 'Bertie', 'Gates', 'Washington County'],
       colours: { ink: '#10222a', accent: '#1d5c60', marker: '#d8461a', paper: '#ecefe9' },
       free: { spend: { recordCount: true, latestDate: true, lineDetail: false } },
       sources: [

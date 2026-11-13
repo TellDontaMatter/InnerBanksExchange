@@ -184,3 +184,13 @@ test('audiences reach the ticker model prompt, with a "only when it clearly bear
   await m.summarizeItems({ items: [{ publisher: 'P', headline: 'H' }], anchor: 'Chowan County', audiences: baseConfig.audiences });
   assert.match(body.system, /Newport News Shipbuilding workers and retirees/); assert.match(body.system, /truck drivers/); assert.match(body.system, /only when the item clearly bears on it/);
 });
+
+test('corridor geography (Virginia Beach to Chowan, north to south) is configured and reaches the ticker prompt', async () => {
+  const order = baseConfig.corridor.order;
+  assert.match(order[0], /Virginia Beach/); assert.match(order[order.length - 1], /Chowan/);
+  assert.ok(order.indexOf('Currituck') < order.indexOf('Camden') && order.indexOf('Camden') < order.findIndex((x) => /Pasquotank/.test(x)) && order.findIndex((x) => /Pasquotank/.test(x)) < order.indexOf('Perquimans'));
+  const { anthropicSummarizer } = require('../engine/summarizer');
+  let body; const m = anthropicSummarizer({ apiKey: 'k', model: 'm', fetchImpl: async (u, o) => { body = JSON.parse(o.body); return { ok: true, json: async () => ({ content: [{ type: 'text', text: '[{"i":0,"summary":"s","why":"w"}]' }] }) }; } });
+  await m.summarizeItems({ items: [{ publisher: 'P', headline: 'H' }], anchor: 'Chowan County', audiences: [], corridor: baseConfig.corridor });
+  assert.match(body.system, /Virginia Beach \/ Chesapeake > Knotts Island/); assert.match(body.system, /southern end of this corridor/);
+});
